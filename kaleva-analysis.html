@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HomeExplorer | Kaleva Property Analysis</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+
+  <body>
+    <header class="navbar">
+      <div class="logo">
+        <span class="brand-home">Home</span
+        ><span class="brand-explorer">Explorer</span>
+      </div>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="ar.html">AR Scan</a>
+        <a href="properties.html">Properties</a>
+        <a href="map.html">Map</a>
+      </nav>
+    </header>
+
+    <section class="property-hero-gallery">
+      <img
+        src="images/sammonkatu-main.jpg"
+        alt="Kaleva apartment"
+        class="property-hero-img"
+      />
+
+      <button class="see-pictures-btn" onclick="openGallery()">
+        See all pictures (5)
+      </button>
+    </section>
+
+    <div id="galleryModal" class="gallery-modal">
+      <span class="close-gallery" onclick="closeGallery()">&times;</span>
+
+      <div class="gallery-grid">
+        <img src="images/sammonkatu-main.jpg" alt="Main image" />
+        <img src="images/sammonkatu-floorplan.jpg" alt="Floor plan" />
+        <img src="images/sammonkatu-2.jpg" alt="Living room" />
+        <img src="images/sammonkatu-3.jpg" alt="Kitchen" />
+        <img src="images/sammonkatu-4.jpg" alt="Bedroom" />
+      </div>
+    </div>
+
+    <section class="analysis-container">
+      <h1>53.1 m², 2 rooms, kitchen, bathroom, glazed balcony</h1>
+      <h2 class="analysis-price">149 800 €</h2>
+      <p class="location">Sammonkatu 29-31 B, 33540 Tampere, Kaleva</p>
+
+      <section class="analysis-text">
+        <h2>Bright Apartment in Kaleva</h2>
+
+        <p>
+          This is a bright and comfortable 53.1 m² two-room apartment in Kaleva.
+          The apartment has a large living room, kitchen with dining space, good
+          storage, and a glazed west-facing balcony.
+        </p>
+
+        <p>
+          The location is excellent for families because schools, daycare,
+          university, TAYS hospital, parks, swimming hall, public transport, and
+          Kaleva services are close to the apartment.
+        </p>
+      </section>
+
+      <section class="analysis-table-section">
+        <h2>Basic Information</h2>
+
+        <table class="analysis-table">
+          <tr>
+            <th>Location</th>
+            <td>Sammonkatu 29-31 B, 33540 Tampere</td>
+          </tr>
+          <tr>
+            <th>Neighbourhood</th>
+            <td>Kaleva</td>
+          </tr>
+          <tr>
+            <th>Item number</th>
+            <td>2020</td>
+          </tr>
+          <tr>
+            <th>Floor</th>
+            <td>5 / 6</td>
+          </tr>
+          <tr>
+            <th>Living area</th>
+            <td>53.1 m²</td>
+          </tr>
+          <tr>
+            <th>Plot area</th>
+            <td>6,522 m²</td>
+          </tr>
+          <tr>
+            <th>Apartment configuration</th>
+            <td>2h + kitchen + bathroom/WC + glazed balcony</td>
+          </tr>
+          <tr>
+            <th>Rooms</th>
+            <td>2</td>
+          </tr>
+          <tr>
+            <th>Condition</th>
+            <td>Satisfactory</td>
+          </tr>
+          <tr>
+            <th>Availability</th>
+            <td>1–2 months</td>
+          </tr>
+        </table>
+      </section>
+
+      <section class="analysis-table-section">
+        <h2>Interior and Facilities</h2>
+
+        <table class="analysis-table">
+          <tr>
+            <th>Kitchen equipment</th>
+            <td>Fridge, stove, cabinets</td>
+          </tr>
+          <tr>
+            <th>Balcony</th>
+            <td>Yes</td>
+          </tr>
+          <tr>
+            <th>Balcony details</th>
+            <td>Glazed west-facing balcony</td>
+          </tr>
+          <tr>
+            <th>Bathroom equipment</th>
+            <td>
+              Shower, shower screen, sink, sink cabinet, mirror cabinet, washing
+              machine connection
+            </td>
+          </tr>
+          <tr>
+            <th>Storage</th>
+            <td>Cabinets in bedroom and hallway</td>
+          </tr>
+          <tr>
+            <th>Private sauna</th>
+            <td>No</td>
+          </tr>
+        </table>
+      </section>
+
+      <section class="analysis-table-section">
+        <h2>Price and Housing Costs</h2>
+
+        <table class="analysis-table">
+          <tr>
+            <th>Debt-free price</th>
+            <td>149 800 €</td>
+          </tr>
+          <tr>
+            <th>Selling price</th>
+            <td>147 999.87 €</td>
+          </tr>
+          <tr>
+            <th>Price per square meter</th>
+            <td>2 821.09 € / m²</td>
+          </tr>
+          <tr>
+            <th>Maintenance charge</th>
+            <td>338.25 € / month</td>
+          </tr>
+          <tr>
+            <th>Capital charge</th>
+            <td>36.30 € / month</td>
+          </tr>
+          <tr>
+            <th>Total housing charge</th>
+            <td>374.55 € / month</td>
+          </tr>
+          <tr>
+            <th>Water charge</th>
+            <td>28 € / person / month</td>
+          </tr>
+          <tr>
+            <th>Parking cost</th>
+            <td>25 € / month</td>
+          </tr>
+        </table>
+      </section>
+
+      <section class="analysis-table-section">
+        <h2>Building and Area</h2>
+
+        <table class="analysis-table">
+          <tr>
+            <th>New development</th>
+            <td>No</td>
+          </tr>
+          <tr>
+            <th>Housing company</th>
+            <td>Asunto Oy Sammonkatu 29-31</td>
+          </tr>
+          <tr>
+            <th>Building type</th>
+            <td>Apartment building</td>
+          </tr>
+          <tr>
+            <th>Building year</th>
+            <td>1960</td>
+          </tr>
+          <tr>
+            <th>Number of apartments</th>
+            <td>111</td>
+          </tr>
+          <tr>
+            <th>Floors</th>
+            <td>6</td>
+          </tr>
+          <tr>
+            <th>Elevator</th>
+            <td>Yes</td>
+          </tr>
+          <tr>
+            <th>Energy class</th>
+            <td>E2018</td>
+          </tr>
+          <tr>
+            <th>Heating</th>
+            <td>District heating</td>
+          </tr>
+          <tr>
+            <th>Transport</th>
+            <td>Tram and bus stop around 50 m away</td>
+          </tr>
+        </table>
+      </section>
+
+      <section class="analysis-table-section">
+        <h2>Neighbourhood Relevance for Families</h2>
+
+        <table class="analysis-table">
+          <tr>
+            <th>Nearby services</th>
+            <td>
+              Grocery store around 30 m away, Kaleva services within walking
+              distance, city centre around 1 km away
+            </td>
+          </tr>
+          <tr>
+            <th>Education</th>
+            <td>School around 300 m away and daycare around 300 m away</td>
+          </tr>
+          <tr>
+            <th>Outdoor areas</th>
+            <td>
+              Several parks nearby, swimming hall just over 100 m away, Kauppi
+              outdoor and skiing areas close by
+            </td>
+          </tr>
+          <tr>
+            <th>Healthcare</th>
+            <td>TAYS hospital nearby</td>
+          </tr>
+          <tr>
+            <th>Family suitability</th>
+            <td>
+              Strong location for families because schools, daycare, parks,
+              services and transport are close
+            </td>
+          </tr>
+        </table>
+      </section>
+      <div class="center-actions">
+        <button
+          class="route-btn"
+          onclick="
+            window.open(
+              'koulumatka-demo.html?asunto=sammonkatu-29-31-b',
+              '_blank',
+            )
+          "
+        >
+          Route Details
+        </button>
+      </div>
+    </section>
+
+    <script src="js/main.js"></script>
+  </body>
+</html>

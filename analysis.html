@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HomeExplorer | Full Property Analysis</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+
+  <body>
+    <header class="navbar">
+      <div class="logo">
+        <span class="brand-home">Home</span
+        ><span class="brand-explorer">Explorer</span>
+      </div>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="ar.html">AR Scan</a>
+        <a href="properties.html">Properties</a>
+        <a href="map.html">Map</a>
+      </nav>
+    </header>
+
+    <section class="property-hero-gallery">
+      <img
+        src="images/hervantajarvi 2.jpg"
+        alt="Living room"
+        class="property-hero-img"
+      />
+
+      <button class="see-pictures-btn" onclick="openGallery()">
+        See all pictures (5)
+      </button>
+    </section>
+
+    <div id="galleryModal" class="gallery-modal">
+      <span class="close-gallery" onclick="closeGallery()">&times;</span>
+
+      <div class="gallery-grid">
+        <img src="images/hervantajarvi-main.jpg" alt="Main building" />
+        <img src="images/floorplan.jpg" alt="Floor plan" />
+        <img src="images/hervantajarvi 1.jpg" alt="Apartment image 1" />
+        <img src="images/hervantajarvi 2.jpg" alt="Living room" />
+        <img src="images/hervantajarvi 3.jpg" alt="Apartment image 3" />
+      </div>
+    </div>
+
+    <section class="analysis-container">
+      <h1>44.5 m², 2 rooms, kitchen, bathroom, glazed balcony</h1>
+      <h2 class="analysis-price">191 350 €</h2>
+      <p class="location">Kaakamonkaari 6 A 34, 33720 Tampere, Hervantajärvi</p>
+
+      <section class="analysis-text">
+        <h2>New Apartment Home in Hervantajärvi</h2>
+
+        <p>
+          Welcome to a new, modern apartment building right next to the tram
+          route's final stop. This four-story district-heated housing complex
+          offers efficient and stylish floor plans. The apartment is suitable
+          for first-time buyers, small families, investors, and elderly
+          residents.
+        </p>
+
+        <p>
+          Almost every apartment has a balcony or private terrace. Balconies can
+          be glazed for an additional fee. The building also includes shared
+          courtyard spaces, sauna facilities, storage rooms, outdoor equipment
+          storage, and family-friendly shared spaces.
+        </p>
+      </section>
+
+      <section class="analysis-table-section">
+        <h2>Basic Information</h2>
+
+        <table class="analysis-table">
+          <tr>
+            <th>Location</th>
+            <td>Kaakamonkaari 6 A 34, 33720 Tampere</td>
+          </tr>
+          <tr>
+            <th>Neighbourhood</th>
+            <td>Hervantajärvi</td>
+          </tr>
+          <tr>
+            <th>Item number</th>
+            <td>37980995</td>
+          </tr>
+          <tr>
+            <th>Floor</th>
+            <td>4 / 4</td>
+          </tr>
+          <tr>
+            <th>Living area</th>
+            <td>44.5 m²</td>
+          </tr>
+          <tr>
+            <th>Plot area</th>
+            <td>3,614 m²</td>
+          </tr>
+          <tr>
+            <th>Total area</th>
+            <td>44.5 m²</td>
+          </tr>
+          <tr>
+            <th>Apartment configuration</th>
+            <td>2h, kitchen, bathroom, glazed balcony</td>
+          </tr>
+          <tr>
+            <th>Rooms</th>
+            <td>2</td>
+          </tr>
+          <tr>
+            <th>Condition</th>
+            <td>New</td>
+          </tr>
+        </table>
+      </section>
+
+      <section class="analysis-table-section">
+        <h2>Interior and Facilities</h2>
+
+        <table class="analysis-table">
+          <tr>
+            <th>Kitchen equipment</th>
+            <td>
+              Dishwasher, fridge-freezer, induction hob, extractor hood,
+              multifunction oven, laminate worktop.
+            </td>
+          </tr>
+          <tr>
+            <th>Balcony</th>
+            <td>Yes</td>
+          </tr>
+          <tr>
+            <th>Balcony details</th>
+            <td>Retracted balcony. Balcony door from the living room.</td>
+          </tr>
+          <tr>
+            <th>Bathroom equipment</th>
+            <td>
+              Mirror cabinet, sink cabinet, washing machine connection,
+              underfloor heating, shower screen, shower and WC.
+            </td>
+          </tr>
+          <tr>
+            <th>Sauna</th>
+            <td>
+              No private sauna. Shared courtyard sauna in the housing company.
+            </td>
+          </tr>
+          <tr>
+            <th>Storage</th>
+            <td>
+              Storage rooms and outdoor equipment storage available in the
+              courtyard building.
+            </td>
+          </tr>
+        </table>
+      </section>
+
+      <section class="analysis-table-section">
+        <h2>Price and Housing Costs</h2>
+
+        <table class="analysis-table">
+          <tr>
+            <th>Debt-free price</th>
+            <td>191 350 €</td>
+          </tr>
+          <tr>
+            <th>Selling price</th>
+            <td>79 210 €</td>
+          </tr>
+          <tr>
+            <th>Price per square meter</th>
+            <td>4 300 € / m²</td>
+          </tr>
+          <tr>
+            <th>Debt share</th>
+            <td>112 140 €</td>
+          </tr>
+          <tr>
+            <th>Maintenance charge</th>
+            <td>160.20 € / month</td>
+          </tr>
+          <tr>
+            <th>Capital charge</th>
+            <td>534 € / month</td>
+          </tr>
+          <tr>
+            <th>Total housing charge</th>
+            <td>694.20 € / month</td>
+          </tr>
+        </table>
+      </section>
+
+      <section class="analysis-table-section">
+        <h2>Building and Area</h2>
+
+        <table class="analysis-table">
+          <tr>
+            <th>New development</th>
+            <td>Yes</td>
+          </tr>
+          <tr>
+            <th>Housing company</th>
+            <td>As Oy Hervantajärven Karpalo</td>
+          </tr>
+          <tr>
+            <th>Building type</th>
+            <td>Apartment building</td>
+          </tr>
+          <tr>
+            <th>Building year</th>
+            <td>2026</td>
+          </tr>
+          <tr>
+            <th>Completion year</th>
+            <td>2027</td>
+          </tr>
+          <tr>
+            <th>Floors</th>
+            <td>4</td>
+          </tr>
+          <tr>
+            <th>Elevator</th>
+            <td>Yes</td>
+          </tr>
+          <tr>
+            <th>Energy class</th>
+            <td>B2018</td>
+          </tr>
+          <tr>
+            <th>Heating</th>
+            <td>District heating, water-circulated underfloor heating</td>
+          </tr>
+          <tr>
+            <th>Transport</th>
+            <td>Tampere tram final stop is around 200 m away.</td>
+          </tr>
+        </table>
+      </section>
+
+      <section class="analysis-table-section">
+        <h2>Neighbourhood Relevance for Families</h2>
+
+        <table class="analysis-table">
+          <tr>
+            <th>Nearby services</th>
+            <td>
+              Grocery store across the road. Hervanta services, shopping centre,
+              health centre, schools and high school are nearby.
+            </td>
+          </tr>
+          <tr>
+            <th>Education</th>
+            <td>
+              Tredu, Tampere University Hervanta campus, and Police University
+              College are nearby.
+            </td>
+          </tr>
+          <tr>
+            <th>Outdoor areas</th>
+            <td>
+              Hervantajärvi swimming place, Makkarajärvi hiking area, outdoor
+              routes and nature areas nearby.
+            </td>
+          </tr>
+          <tr>
+            <th>Family spaces</th>
+            <td>
+              Shared playground and courtyard area are available for residents.
+            </td>
+          </tr>
+          <tr>
+            <th>Mobility</th>
+            <td>
+              Good for car-free living because the tram stop is close to the
+              property.
+            </td>
+          </tr>
+        </table>
+      </section>
+      <div class="center-actions">
+        <button
+          class="route-btn"
+          onclick="
+            window.open(
+              'koulumatka-demo.html?asunto=kaakamonkaari-6-a-34',
+              '_blank',
+            )
+          "
+        >
+          Route Details
+        </button>
+      </div>
+    </section>
+
+    <script src="js/main.js"></script>
+  </body>
+</html>

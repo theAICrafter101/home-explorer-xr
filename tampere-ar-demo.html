@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tampere AR - Photoreal Future View</title>
+  <style>
+    :root {
+      --ink: #111816;
+      --muted: #61706a;
+      --accent: #0d7f63;
+      --panel: rgba(255, 255, 255, .86);
+      --line: rgba(17, 24, 22, .14);
+      --shadow: 0 22px 70px rgba(0, 0, 0, .22);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #e8eeeb;
+      color: var(--ink);
+    }
+
+    .app {
+      height: 100dvh;
+      min-height: 560px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    header {
+      position: relative;
+      z-index: 10;
+      display: grid;
+      grid-template-columns: minmax(280px, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+      padding: 14px clamp(18px, 3vw, 40px);
+      background: rgba(247, 249, 248, .92);
+      border-bottom: 1px solid var(--line);
+      box-shadow: 0 5px 22px rgba(0, 0, 0, .08);
+      backdrop-filter: blur(16px);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(23px, 2.5vw, 38px);
+      line-height: 1;
+      font-weight: 820;
+      letter-spacing: 0;
+    }
+
+    .sub {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: clamp(13px, 1vw, 16px);
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button, .mode {
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .86);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, .1);
+      color: var(--ink);
+      font: inherit;
+    }
+
+    button {
+      min-width: 48px;
+      padding: 0 15px;
+      cursor: pointer;
+    }
+
+    #arToggle {
+      min-width: 150px;
+      font-weight: 760;
+    }
+
+    button[aria-pressed="true"] {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .mode {
+      display: grid;
+      gap: 5px;
+      min-width: 210px;
+      width: min(270px, 22vw);
+      padding: 8px 13px 10px;
+    }
+
+    .mode label {
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    main {
+      position: relative;
+      min-height: 0;
+      overflow: hidden;
+      background: #cfd8d4;
+    }
+
+    .scene {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      background: #d6dedb;
+    }
+
+    .scene::before {
+      content: "";
+      position: absolute;
+      inset: -4%;
+      background-image: url("images/tampere-current-site.png");
+      background-size: cover;
+      background-position: 50% center;
+      filter: saturate(.98) contrast(1.02);
+      transform: scale(1.02);
+    }
+
+    .scene::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(to top, rgba(0,0,0,.28), rgba(0,0,0,0) 38%),
+        radial-gradient(circle at 50% 40%, rgba(255,255,255,0) 0 34%, rgba(15, 24, 21, .18) 100%);
+      pointer-events: none;
+    }
+
+    .future-ghost {
+      position: absolute;
+      inset: -4%;
+      background-image: url("images/tampere-future-view.png");
+      background-size: cover;
+      background-position: 50% center;
+      opacity: 0;
+      filter: saturate(1.04) contrast(1.03);
+      transform: scale(1.02);
+      transition: opacity .24s ease;
+    }
+
+    .ar-off .future-ghost {
+      opacity: 0;
+    }
+
+    .phone {
+      position: absolute;
+      z-index: 4;
+      left: var(--phone-x, 50%);
+      top: 50%;
+      height: min(calc(100% - 40px), 86dvh);
+      width: auto;
+      aspect-ratio: 9 / 16;
+      transform: translate(-50%, -50%) rotate(-.7deg);
+      border: clamp(8px, .8vw, 13px) solid #0e1311;
+      border-radius: 32px;
+      box-shadow: 0 28px 80px rgba(0, 0, 0, .38), inset 0 0 0 1px rgba(255,255,255,.2);
+      opacity: 1;
+      pointer-events: none;
+      transition: opacity .22s ease, transform .22s ease, left .26s ease;
+    }
+
+    .ar-off .phone {
+      opacity: 0;
+      transform: translate(-50%, -47%) rotate(-.7deg) scale(.98);
+    }
+
+    .phone::before {
+      content: "";
+      position: absolute;
+      z-index: 5;
+      left: 50%;
+      top: 7px;
+      width: 34%;
+      height: 16px;
+      transform: translateX(-50%);
+      background: #0e1311;
+      border-radius: 0 0 14px 14px;
+    }
+
+    .screen {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      border-radius: 20px;
+      background: #dbe5e1;
+    }
+
+    .screen img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: var(--view-x, 50%) var(--view-y, 50%);
+      filter: saturate(1.05) contrast(1.03);
+      transform: translateY(var(--phone-pan-y, 0%)) scale(var(--phone-zoom, 1));
+      transition: object-position .22s ease, transform .22s ease;
+    }
+
+    .screen::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      background:
+        linear-gradient(115deg, rgba(255,255,255,.27) 0 18%, rgba(255,255,255,0) 19% 100%),
+        radial-gradient(circle at 50% 42%, rgba(255,255,255,0) 0 45%, rgba(16, 126, 96, .16) 100%);
+      pointer-events: none;
+    }
+
+    .scan {
+      position: absolute;
+      z-index: 3;
+      left: 8%;
+      right: 8%;
+      height: 2px;
+      top: 16%;
+      background: rgba(255, 255, 255, .9);
+      box-shadow: 0 0 18px rgba(66, 225, 184, .86);
+      animation: scan 2.4s ease-in-out infinite;
+    }
+
+    .hud {
+      position: absolute;
+      z-index: 6;
+      left: clamp(14px, 2.2vw, 32px);
+      bottom: clamp(14px, 2.2vw, 28px);
+      width: min(380px, calc(100vw - 28px));
+      padding: 14px 15px;
+      border: 1px solid rgba(255,255,255,.5);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+
+    .hud h2 {
+      margin: 0 0 6px;
+      font-size: 18px;
+    }
+
+    .hud p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.42;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 11px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 8px;
+      border: 1px solid rgba(17,24,22,.12);
+      border-radius: 999px;
+      background: rgba(255,255,255,.78);
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #0d7f63;
+    }
+
+    .dot.site { background: #9b7b45; }
+    .dot.water { background: #4e9eaa; }
+
+    .toast {
+      position: absolute;
+      z-index: 6;
+      right: clamp(14px, 2.2vw, 32px);
+      bottom: clamp(14px, 2.2vw, 28px);
+      width: min(340px, calc(100vw - 28px));
+      padding: 12px 13px;
+      border-radius: 8px;
+      background: rgba(10, 17, 15, .82);
+      color: #fff;
+      box-shadow: var(--shadow);
+      font-size: 13px;
+      line-height: 1.35;
+      backdrop-filter: blur(14px);
+    }
+
+    @keyframes scan {
+      0%, 100% { top: 16%; opacity: .18; }
+      50% { top: 83%; opacity: .9; }
+    }
+
+    @media (max-width: 980px) {
+      header {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .controls {
+        justify-content: flex-start;
+      }
+      .mode {
+        width: min(320px, 100%);
+      }
+    }
+
+    @media (max-width: 700px) {
+      html, body { overflow: auto; }
+      .app {
+        height: 100dvh;
+        min-height: 100dvh;
+      }
+      header {
+        padding: 12px;
+      }
+      h1 {
+        font-size: clamp(21px, 7vw, 32px);
+      }
+      .controls {
+        display: grid;
+        grid-template-columns: 42px 1fr 42px;
+        width: 100%;
+      }
+      button {
+        min-width: 42px;
+        padding: 0 9px;
+      }
+      #arToggle {
+        min-width: 0;
+      }
+      .mode {
+        grid-column: 1 / -1;
+        width: 100%;
+      }
+      .phone {
+        top: 50%;
+        height: min(calc(100% - 28px), 82dvh);
+        width: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div>
+        <h1>Tampere AR - Hiedanranta Future View</h1>
+        <p class="sub">A photoreal AR concept: stand on the construction site and see the completed district through a phone.</p>
+      </div>
+      <div class="controls" aria-label="Demo controls">
+        <button id="walkBack" type="button" title="Walk backward">&lt;</button>
+        <button id="arToggle" type="button" aria-pressed="false">AR view off</button>
+        <button id="walkForward" type="button" title="Walk forward">&gt;</button>
+        <div class="mode">
+          <label for="progress">Phone position</label>
+          <input id="progress" type="range" min="0" max="100" value="38">
+        </div>
+      </div>
+    </header>
+
+    <main id="demo">
+      <div class="scene" aria-hidden="true"></div>
+      <div class="future-ghost" aria-hidden="true"></div>
+
+      <div id="phone" class="phone" aria-hidden="true">
+        <div class="screen">
+          <img src="images/tampere-future-view.png" alt="">
+          <div class="scan"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const demo = document.getElementById("demo");
+    const slider = document.getElementById("progress");
+    const toggle = document.getElementById("arToggle");
+    const hudTitle = document.getElementById("hudTitle");
+    const hudText = document.getElementById("hudText");
+    const walkBack = document.getElementById("walkBack");
+    const walkForward = document.getElementById("walkForward");
+
+    let arOn = false;
+
+    function updatePosition() {
+      const value = Number(slider.value);
+      const p = value / 100;
+      const mainRect = demo.getBoundingClientRect();
+      const phoneRect = document.getElementById("phone").getBoundingClientRect();
+      const edgePadding = Math.min(14, Math.max(6, mainRect.width * .012));
+      const minCenter = phoneRect.width / 2 + edgePadding;
+      const maxCenter = mainRect.width - phoneRect.width / 2 - edgePadding;
+      const phoneX = minCenter + (maxCenter - minCenter) * p;
+      const viewX = 10 + p * 80;
+      const viewY = 52;
+      const phoneZoom = 1;
+      const phonePanY = 0;
+      demo.style.setProperty("--phone-x", phoneX + "px");
+      demo.style.setProperty("--view-x", viewX + "%");
+      demo.style.setProperty("--view-y", viewY + "%");
+      demo.style.setProperty("--phone-zoom", phoneZoom);
+      demo.style.setProperty("--phone-pan-y", phonePanY + "%");
+    }
+
+    function updateCopy() {
+      if (arOn) {
+        demo.classList.remove("ar-off");
+        toggle.textContent = "AR view on";
+        toggle.setAttribute("aria-pressed", "true");
+        hudTitle.textContent = "Look through the phone";
+        hudText.textContent = "The construction site stays visible around the device. Inside the phone, a photoreal future view shows the completed waterfront district aligned with the current scene.";
+      } else {
+        demo.classList.add("ar-off");
+        toggle.textContent = "AR view off";
+        toggle.setAttribute("aria-pressed", "false");
+        hudTitle.textContent = "Current construction view";
+        hudText.textContent = "The phone overlay is hidden. Only the current construction-site photo is visible, so the visitor can compare it with the AR view by switching the overlay back on.";
+      }
+    }
+
+    function stepWalk(delta) {
+      const next = Math.max(0, Math.min(100, Number(slider.value) + delta));
+      slider.value = String(next);
+      updatePosition();
+    }
+
+    toggle.addEventListener("click", () => {
+      arOn = !arOn;
+      updateCopy();
+    });
+    slider.addEventListener("input", updatePosition);
+    walkBack.addEventListener("click", () => stepWalk(-8));
+    walkForward.addEventListener("click", () => stepWalk(8));
+    window.addEventListener("resize", updatePosition);
+
+    updatePosition();
+    updateCopy();
+  </script>
+</body>
+</html>

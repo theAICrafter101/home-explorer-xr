@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HomeExplorer | AR Scan</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <header class="navbar">
+      <div class="logo">
+        <span class="brand-home">Home</span
+        ><span class="brand-explorer">Explorer</span>
+      </div>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="ar.html">AR Scan</a>
+        <a href="properties.html">Properties</a>
+        <a href="map.html">Map</a>
+      </nav>
+    </header>
+
+    <section class="ar-scan-page">
+
+        <div class="postal-search">
+          <button onclick="scanArea()">Scan Area</button>
+        </div>
+
+        <div class="quick-links">
+          <button class="quick-btn" onclick="quickScan('33540')">
+            Kaleva (33540)
+          </button>
+          <button class="quick-btn" onclick="quickScan('33720')">
+            Hervanta (33720)
+          </button>
+          <button class="quick-btn" onclick="quickScan('33870')">
+            Vuores (33870)
+          </button>
+          <button class="quick-btn" onclick="quickScan('33880')">
+            Lempäälä (33880)
+          </button>
+          <button class="quick-btn" onclick="window.open('tampere-ar-demo.html', '_blank')">
+            Future buildings
+          </button>
+          <button class="quick-btn" onclick="window.open('tampere-tram-ar-demo.html', '_blank')">
+            Tram line
+          </button>
+        </div>
+      </div>
+
+      <div id="scanResults" class="scan-results"></div>
+    </section>
+
+    <script src="js/tampere-data.js"></script>
+    <script>
+      // Check if area is passed in URL and auto-scan
+      window.addEventListener("load", () => {
+        const params = new URLSearchParams(window.location.search);
+        const area = params.get("area");
+        if (area) {
+          performScan(area);
+        }
+      });
+
+      function scanArea() {
+        const input = document.getElementById("postalInput").value;
+        if (!input.trim()) {
+          alert("Please enter a postal code or area name");
+          return;
+        }
+        performScan(input);
+      }
+
+      function quickScan(postalCode) {
+        performScan(postalCode);
+      }
+
+      function performScan(query) {
+        const resultsDiv = document.getElementById("scanResults");
+
+        // Show scanning animation
+        resultsDiv.innerHTML = `
+          <div class="scan-loading">
+            <div class="scanner-animation">
+              <div class="scanner-line"></div>
+              <p>🔍 Scanning area...</p>
+            </div>
+          </div>
+        `;
+        resultsDiv.scrollIntoView({ behavior: "smooth" });
+
+        // Simulate 3-5 second scan
+        setTimeout(() => {
+          const result = searchByPostalCode(query);
+
+          if (!result) {
+            resultsDiv.innerHTML =
+              '<div class="error-message">❌ Area not found. Please try another postal code.</div>';
+            return;
+          }
+
+          const area = result.area;
+          const routes = result.routes;
+
+          let html = `
+          <div class="scan-header">
+            <h2>● SCAN COMPLETE</h2>
+            <h1>${area.name}</h1>
+            <p>📍 Postal Code: ${area.postalCode}</p>
+          </div>
+
+          <div class="demographics-section">
+            <h3>👥 Demographics & Population</h3>
+            <div class="data-grid">
+              <div class="data-card">
+                <span class="label">Families in Area</span>
+                <span class="value">${area.demographics.families}</span>
+              </div>
+              <div class="data-card">
+                <span class="label">Children Ratio</span>
+                <span class="value">${area.demographics.childrenRatio}</span>
+              </div>
+              <div class="data-card">
+                <span class="label">Avg. Household Size</span>
+                <span class="value">${area.demographics.avgHouseholdSize} people</span>
+              </div>
+              <div class="data-card">
+                <span class="label">Average Age</span>
+                <span class="value">${area.demographics.avgAge} years</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="family-score-section">
+            <h3>⭐ Family Score & Safety</h3>
+            <div class="score-display">
+              <div class="score-circle">
+                <div class="score-value">${area.familyScore}/100</div>
+                <div class="score-label">Family Score</div>
+              </div>
+              <div class="safety-info">
+                <h4>Safety Details</h4>
+                <p><strong>Overall Safety:</strong> ${area.safety}</p>
+                <p><strong>Crime Rate:</strong> ${area.safetyDetails.crimeRate}</p>
+                <p><strong>Traffic Accidents:</strong> ${area.safetyDetails.trafficAccidents}</p>
+                <p><strong>Emergency Response:</strong> ${area.safetyDetails.emergencyResponse}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="education-section">
+            <h3>🏫 Education</h3>
+            <div class="data-grid">
+              <div class="info-card">
+                <span class="icon">🏫</span>
+                <span class="label">Schools</span>
+                <span class="value">${area.education.schools}</span>
+              </div>
+              <div class="info-card">
+                <span class="icon">👶</span>
+                <span class="label">Daycare Centers</span>
+                <span class="value">${area.education.daycare}</span>
+              </div>
+              <div class="info-card">
+                <span class="icon">📚</span>
+                <span class="label">Libraries</span>
+                <span class="value">${area.recreation.libraries}</span>
+              </div>
+            </div>
+            <p class="school-list"><strong>Schools:</strong> ${area.education.schoolNames.join(", ")}</p>
+          </div>
+
+          <div class="recreation-section">
+            <h3>🎮 Recreation & Parks</h3>
+            <div class="data-grid">
+              <div class="info-card">
+                <span class="icon">🎪</span>
+                <span class="label">Playgrounds</span>
+                <span class="value">${area.recreation.playgrounds}</span>
+              </div>
+              <div class="info-card">
+                <span class="icon">🌳</span>
+                <span class="label">Parks</span>
+                <span class="value">${area.recreation.parks}</span>
+              </div>
+            </div>
+            <p class="sports-list"><strong>Sports Facilities:</strong> ${area.recreation.sports.join(", ")}</p>
+          </div>
+
+          <div class="routes-section">
+            <h3>🚶🌳  Route to Parks</h3>
+            <div class="routes-container">
+              <div class="routes-subsection">
+                ${routes.parkRoutes
+                  .map(
+                    (route) => `
+                  <div class="route-card">
+                    <h5>${route.park}</h5>
+                    <div class="route-details">
+                      <p><strong>Distance:</strong> ${route.distance} (${route.walkTime} walk)</p>
+                      <p><strong>Accessibility:</strong> ${route.accessibility}</p>
+                      <p><strong>Features:</strong> ${route.playAreas.join(", ")}</p>
+                    </div>
+                  </div>
+                `,
+                  )
+                  .join("")}
+              </div>
+            </div>
+          </div>
+
+          <div class="transport-section">
+            <h3>🚌 Transportation</h3>
+            <div class="data-grid">
+              <div class="info-card">
+                <span class="icon">🚋</span>
+                <span class="label">Tram Stops</span>
+                <span class="value">${area.transportation.tramStops}</span>
+              </div>
+              <div class="info-card">
+                <span class="icon">🚌</span>
+                <span class="label">Bus Stops</span>
+                <span class="value">${area.transportation.busStops}</span>
+              </div>
+              <div class="info-card">
+                <span class="icon">⏱️</span>
+                <span class="label">To City Center</span>
+                <span class="value">${area.transportation.avgCommuteTime}</span>
+              </div>
+            </div>
+            <p><strong>Bike Lanes:</strong> ${area.transportation.bikeLanes}</p>
+          </div>
+
+          <div class="construction-section">
+            <h3>🏗️ Construction & Development</h3>
+            ${
+              area.construction.ongoing.length > 0
+                ? `
+              <div class="ongoing-projects">
+                <h4>🔧 Ongoing Projects</h4>
+                ${area.construction.ongoing
+                  .map(
+                    (project) => `
+                  <div class="project-card ongoing">
+                    <h5>${project.name}</h5>
+                    <p><strong>Status:</strong> ${project.status}</p>
+                    <p><strong>Completion:</strong> ${project.completion}</p>
+                    <p><strong>Impact:</strong> ${project.impact}</p>
+                    <p class="family-benefit"><strong>👨‍👩‍👧 Family Benefit:</strong> ${project.familyBenefit}</p>
+                  </div>
+                `,
+                  )
+                  .join("")}
+              </div>
+            `
+                : ""
+            }
+
+            ${
+              area.construction.planned.length > 0
+                ? `
+              <div class="planned-projects">
+                <h4>📋 Planned Projects</h4>
+                ${area.construction.planned
+                  .map(
+                    (project) => `
+                  <div class="project-card planned">
+                    <h5>${project.name}</h5>
+                    <p><strong>Expected Start:</strong> ${project.expectedStart}</p>
+                    <p><strong>Completion:</strong> ${project.completion}</p>
+                    <p><strong>Impact:</strong> ${project.impact}</p>
+                    <p class="family-benefit"><strong>👨‍👩‍👧 Family Benefit:</strong> ${project.familyBenefit}</p>
+                  </div>
+                `,
+                  )
+                  .join("")}
+              </div>
+            `
+                : ""
+            }
+          </div>
+
+          <div class="services-section">
+            <h3>🛍️ Services & Amenities</h3>
+            <div class="data-grid">
+              <div class="info-card">
+                <span class="icon">🛒</span>
+                <span class="label">Grocery Stores</span>
+                <span class="value">${area.services.groceryStores}</span>
+              </div>
+              <div class="info-card">
+                <span class="icon">💊</span>
+                <span class="label">Pharmacies</span>
+                <span class="value">${area.services.pharmacies}</span>
+              </div>
+              <div class="info-card">
+                <span class="icon">🏥</span>
+                <span class="label">Clinics</span>
+                <span class="value">${area.services.clinics}</span>
+              </div>
+              <div class="info-card">
+                <span class="icon">🍽️</span>
+                <span class="label">Restaurants</span>
+                <span class="value">${area.services.restaurants}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="housing-section">
+            <h3>🏠 Housing Market</h3>
+            <div class="housing-info">
+              <div class="housing-stat">
+                <span class="label">Average Price: </span>
+                <span class="value">${area.housing.avgPrice}</span>
+              </div>
+              <div class="housing-stat">
+                <span class="label">Price per m²: </span>
+                <span class="value">${area.housing.pricePerM2}</span>
+              </div>
+              <div class="housing-stat">
+                <span class="label">Types:    </span>
+                <span class="value">${area.housing.types.join(", ")}</span>
+              </div>
+              <div class="housing-stat">
+                <span class="label">Average Size: </span>
+                <span class="value">${area.housing.avgSize}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="action-buttons">
+            <button onclick="window.location.href='map.html'" class="btn-primary">View on Map</button>
+            <button onclick="window.location.href='properties.html'" class="btn-primary">View Properties</button>
+            <button onclick="document.getElementById('postalInput').value = ''; document.getElementById('scanResults').innerHTML = '';" class="btn-secondary">New Search</button>
+          </div>
+        `;
+
+          resultsDiv.innerHTML = html;
+          resultsDiv.scrollIntoView({ behavior: "smooth" });
+        }, 3000); // 3 second scan time
+      }
+    </script>
+  </body>
+</html>

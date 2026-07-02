@@ -1,0 +1,2769 @@
+<!doctype html>
+<html lang="fi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Koulumatka</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17201b;
+      --muted: #5e6b62;
+      --line: #d8ded7;
+      --panel: #ffffff;
+      --bg: #eef2ed;
+      --green: #159957;
+      --blue: #2563eb;
+      --red: #d92d20;
+      --amber: #b7791f;
+      --shadow: 0 20px 60px rgba(20, 32, 26, 0.16);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+
+    button, select { font: inherit; }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 390px minmax(0, 1fr) 330px;
+    }
+
+    .sidebar,
+    .risk-panel {
+      background: var(--panel);
+      border-color: var(--line);
+      overflow-y: auto;
+    }
+
+    .sidebar {
+      border-right: 1px solid var(--line);
+      padding: 24px;
+    }
+
+    .risk-panel {
+      border-left: 1px solid var(--line);
+      padding: 22px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: #173a2a;
+      color: #fff;
+      font-weight: 800;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+
+    h1 {
+      font-size: 20px;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    .subtle {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .language-toggle,
+    .route-toggle {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .language-toggle {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .route-toggle {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .time-toggle {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .language-toggle button,
+    .time-toggle button,
+    .toggle-btn {
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      cursor: pointer;
+      font-weight: 750;
+    }
+
+    .language-toggle button.active,
+    .time-toggle button.active,
+    .toggle-btn.active {
+      color: #fff;
+      background: #173a2a;
+      border-color: #173a2a;
+    }
+
+    .selector {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .risk-select {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .section-heading {
+      font-size: 16px;
+      margin: 0 0 10px;
+    }
+
+    .section-heading.spacious {
+      margin: 22px 0 10px;
+    }
+
+    select {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--ink);
+      background: #fff;
+      padding: 0 12px;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .metric {
+      min-height: 72px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: #fbfcfb;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 20px;
+      line-height: 1.1;
+      margin-top: 5px;
+    }
+
+    .score {
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .score-ring {
+      width: 92px;
+      height: 92px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at center, #fff 57%, transparent 58%),
+        conic-gradient(var(--green) calc(var(--score) * 36deg), #e7ece7 0);
+      box-shadow: inset 0 0 0 1px #e8eee8;
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .score h3 {
+      font-size: 16px;
+      margin-bottom: 5px;
+    }
+
+    .risk-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .risk-card {
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 12px;
+      cursor: pointer;
+    }
+
+    .risk-card.active {
+      border-color: #173a2a;
+      box-shadow: 0 0 0 3px rgba(23, 58, 42, 0.12);
+    }
+
+    .risk-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .time-insight {
+      margin: 0 0 18px;
+      border: 1px solid #cbe5d4;
+      border-radius: 8px;
+      background: #eef7f1;
+      padding: 13px;
+    }
+
+    .time-insight strong {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .traffic-line {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      border-radius: 999px;
+      padding: 0 9px;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .badge.high { color: #fff; background: var(--red); }
+    .badge.medium { color: #241507; background: #f4c26b; }
+    .badge.low { color: #fff; background: var(--green); }
+
+    .map-area {
+      position: relative;
+      min-width: 0;
+      overflow: hidden;
+      background: #dbe4d9;
+    }
+
+    .map-area::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      box-shadow: inset 0 0 0 1px rgba(23, 32, 27, 0.18);
+    }
+
+    .leaflet-map {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+    }
+
+    .leaflet-control-layers,
+    .leaflet-control-zoom {
+      border: 0 !important;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.18) !important;
+    }
+
+    .leaflet-control-layers {
+      border-radius: 8px;
+      overflow: hidden;
+      font: 13px Inter, ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .map-marker {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border: 3px solid #fff;
+      border-radius: 50%;
+      color: #fff;
+      background: #173a2a;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.28);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .map-marker.school,
+    .map-marker.destination { background: #1d4ed8; }
+    .map-marker.risk { background: var(--red); cursor: pointer; }
+    .map-marker.risk.medium { background: var(--amber); color: #241507; }
+    .map-marker.risk.low { background: var(--green); }
+    .map-marker.risk.active { outline: 5px solid rgba(255,255,255,0.65); }
+
+    .map-toolbar {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      top: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      z-index: 8;
+      pointer-events: none;
+    }
+
+    .map-pill {
+      min-height: 36px;
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.91);
+      padding: 0 13px;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.16);
+      font-size: 13px;
+      font-weight: 750;
+      pointer-events: auto;
+    }
+
+    .legend {
+      position: absolute;
+      left: 18px;
+      top: 66px;
+      display: grid;
+      gap: 8px;
+      z-index: 8;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 32px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.92);
+      padding: 0 11px;
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.14);
+    }
+
+    .swatch {
+      width: 18px;
+      height: 5px;
+      border-radius: 999px;
+      background: var(--green);
+    }
+
+    .swatch.blue { background: var(--blue); }
+    .swatch.orange { background: var(--amber); }
+
+    .swatch.red {
+      width: 10px;
+      height: 10px;
+      background: var(--red);
+    }
+
+    .risk-preview {
+      height: 170px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      position: relative;
+      overflow: hidden;
+      background: #dbe4d9;
+      border: 1px solid var(--line);
+    }
+
+    .risk-preview::before,
+    .risk-preview::after {
+      display: none;
+    }
+
+    .risk-preview .leaflet-control-attribution {
+      font-size: 9px;
+    }
+
+    .panel-title {
+      font-size: 18px;
+      margin-bottom: 6px;
+    }
+
+    .detail-grid {
+      display: grid;
+      gap: 9px;
+      margin: 18px 0;
+    }
+
+    .detail {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 9px;
+      font-size: 14px;
+    }
+
+    .detail span:first-child { color: var(--muted); }
+
+    .recommendation {
+      border-radius: 8px;
+      background: #eef7f1;
+      border: 1px solid #cbe5d4;
+      padding: 13px;
+      line-height: 1.45;
+      font-size: 14px;
+    }
+
+    @media (max-width: 1060px) {
+      .app { grid-template-columns: 340px minmax(0, 1fr); }
+
+      .risk-panel {
+        grid-column: 1 / -1;
+        border-left: 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .map-area { min-height: 62vh; }
+    }
+
+    @media (max-width: 760px) {
+      .app { display: block; }
+
+      .sidebar,
+      .risk-panel {
+        border: 0;
+        padding: 18px;
+      }
+
+      .map-area { height: 58vh; }
+      .meta-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">K</div>
+        <div>
+          <h1 id="pageHeading">Koulumatka</h1>
+          <p class="subtle" data-i18n="tagline"></p>
+        </div>
+      </div>
+
+      <div class="language-toggle" role="group" aria-label="Language">
+        <button class="active" type="button" data-lang="fi">FI</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+
+      <label class="selector">
+        <span class="subtle" data-i18n="selectProperty"></span>
+        <select id="propertySelect"></select>
+      </label>
+
+      <section class="score" id="scoreBlock">
+        <div class="score-ring"><span id="scoreValue"></span></div>
+        <div>
+          <h3 data-i18n="safety"></h3>
+          <p class="subtle" id="scoreText"></p>
+        </div>
+      </section>
+
+      <h3 class="section-heading" data-i18n="timeContext"></h3>
+      <div class="time-toggle" role="group" aria-label="Time context">
+        <button class="active" type="button" data-time="morning" data-i18n="morning"></button>
+        <button type="button" data-time="midday" data-i18n="midday"></button>
+        <button type="button" data-time="afternoon" data-i18n="afternoon"></button>
+      </div>
+
+      <div class="time-insight">
+        <strong id="timeInsightTitle"></strong>
+        <p class="subtle" id="timeInsightText"></p>
+      </div>
+
+      <div class="route-toggle" role="group" aria-label="Route choice">
+        <button class="toggle-btn active" id="normalRoute" type="button" data-i18n="normalRoute"></button>
+        <button class="toggle-btn" id="childRoute" type="button" data-i18n="childRoute"></button>
+      </div>
+
+      <div class="meta-grid">
+        <div class="metric">
+          <span class="subtle" data-i18n="time"></span>
+          <strong id="duration"></strong>
+        </div>
+        <div class="metric">
+          <span class="subtle" data-i18n="distance"></span>
+          <strong id="distance"></strong>
+        </div>
+        <div class="metric">
+          <span class="subtle" data-i18n="risks"></span>
+          <strong id="riskCount"></strong>
+        </div>
+      </div>
+
+      <h3 class="section-heading spacious" data-i18n="riskPoints"></h3>
+      <label class="risk-select">
+        <span class="subtle" data-i18n="chooseIntersection"></span>
+        <select id="riskSelect"></select>
+      </label>
+      <div class="risk-list" id="riskList"></div>
+    </aside>
+
+    <section class="map-area" aria-label="Map view">
+      <div class="map-toolbar">
+        <div class="map-pill" id="mapTitle"></div>
+      </div>
+
+      <div id="leafletMap" class="leaflet-map" aria-label="Real map"></div>
+
+      <div class="legend">
+        <span><i class="swatch"></i><span data-i18n="legendNormal"></span></span>
+        <span><i class="swatch blue"></i><span data-i18n="legendChild"></span></span>
+        <span><i class="swatch orange"></i><span data-i18n="legendConstruction"></span></span>
+        <span><i class="swatch red"></i><span data-i18n="legendRisk"></span></span>
+      </div>
+
+    </section>
+
+    <aside class="risk-panel">
+      <div class="risk-preview" id="riskPreviewMap" aria-label="Risk point satellite preview"></div>
+      <h2 class="panel-title" id="riskTitle"></h2>
+      <p class="subtle" id="riskDescription"></p>
+
+      <div class="detail-grid">
+        <div class="detail"><span data-i18n="speedLimit"></span><strong id="speed"></strong></div>
+        <div class="detail"><span data-i18n="lanes"></span><strong id="lanes"></strong></div>
+        <div class="detail"><span data-i18n="crosswalk"></span><strong id="crosswalk"></strong></div>
+        <div class="detail"><span data-i18n="trafficLights"></span><strong id="lights"></strong></div>
+        <div class="detail"><span data-i18n="visibility"></span><strong id="visibility"></strong></div>
+      </div>
+
+      <div class="recommendation" id="recommendation"></div>
+    </aside>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const ui = {
+      fi: {
+        pageTitle: "Koulumatka",
+        tagline: "Reitin turvallisuus ja huomioitavat kohdat",
+        selectProperty: "Valitse reitti",
+        safety: "Turvallisuus",
+        timeContext: "Ajankohta",
+        morning: "Aamu 8",
+        midday: "P&auml;iv&auml; 12",
+        afternoon: "Paluu 14",
+        normalRoute: "Nopeampi reitti",
+        childRoute: "Rauhallisempi reitti",
+        time: "Aika",
+        distance: "Matka",
+        risks: "Tien ylitykset",
+        riskPoints: "Huomioitavat kohdat",
+        chooseIntersection: "Valitse risteys",
+        legendNormal: "Normaali",
+        legendChild: "Lapsireitti",
+        legendConstruction: "Ty&ouml;maa",
+        legendRisk: "Riski",
+        speedLimit: "Nopeusrajoitus",
+        lanes: "Kaistat",
+        crosswalk: "Suojatie",
+        trafficLights: "Liikennevalot",
+        visibility: "N&auml;kyvyys",
+        high: "Korkea",
+        medium: "Keskitaso",
+        low: "Matala",
+        mapNormal: "Nopeampi reitti",
+        mapChild: "Rauhallisempi reitti",
+        trafficRisk: "Aikariski",
+        recommendedPrefix: "Suositus",
+        recommendedNormal: "Nopeampi reitti sopii t&auml;h&auml;n aikaan.",
+        recommendedChild: "Kiert&auml;v&auml; lapsireitti on t&auml;h&auml;n aikaan turvallisempi."
+      },
+      en: {
+        pageTitle: "School Route",
+        tagline: "Route safety and points worth noticing",
+        selectProperty: "Choose route",
+        safety: "Safety",
+        timeContext: "Time of day",
+        morning: "8 AM",
+        midday: "12 PM",
+        afternoon: "2 PM return",
+        normalRoute: "Faster route",
+        childRoute: "Calmer route",
+        time: "Time",
+        distance: "Distance",
+        risks: "Street crossings",
+        riskPoints: "Route notes",
+        chooseIntersection: "Choose intersection",
+        legendNormal: "Normal",
+        legendChild: "Child route",
+        legendConstruction: "Roadworks",
+        legendRisk: "Risk",
+        speedLimit: "Speed limit",
+        lanes: "Lanes",
+        crosswalk: "Crosswalk",
+        trafficLights: "Traffic lights",
+        visibility: "Visibility",
+        high: "High",
+        medium: "Medium",
+        low: "Low",
+        mapNormal: "Faster route",
+        mapChild: "Calmer route",
+        trafficRisk: "Time risk",
+        recommendedPrefix: "Recommendation",
+        recommendedNormal: "The faster route is suitable at this time.",
+        recommendedChild: "The safer child route is better at this time."
+      }
+    };
+
+    const timeProfiles = {
+      morning: {
+        recommendedRoute: "child",
+        scoreDelta: { normal: -1.1, child: 0 },
+        trafficLevel: { fi: "Korkea ruuhka", en: "High congestion" },
+        insightTitle: {
+          fi: "Aamulla liikenne nostaa riski&auml;",
+          en: "Morning traffic raises the risk"
+        },
+        insightText: {
+          fi: "Klo 8 koulun ja ty&ouml;matkan liikenne osuvat samaan aikaan. Rauhallisempi reitti on usein pienen lis&auml;matkan arvoinen.",
+          en: "At 8 AM school and commute traffic overlap. A calmer route is usually worth a few extra minutes."
+        },
+        riskText: {
+          high: { fi: "Klo 8 ruuhka tekee kohdasta selv&auml;sti kriittisen.", en: "At 8 AM congestion makes this spot clearly critical." },
+          medium: { fi: "Klo 8 k&auml;&auml;ntyv&auml;&auml; liikennett&auml; on tavallista enemm&auml;n.", en: "At 8 AM there is more turning traffic than usual." },
+          low: { fi: "Klo 8 riski pysyy matalana, mutta ymp&auml;rist&ouml; on vilkkaampi.", en: "At 8 AM the risk stays low, but the area is busier." }
+        }
+      },
+      midday: {
+        recommendedRoute: "normal",
+        scoreDelta: { normal: 0.4, child: 0.1 },
+        trafficLevel: { fi: "Hiljainen", en: "Quiet" },
+        insightTitle: {
+          fi: "P&auml;iv&auml;ll&auml; nopea reitti on usein riitt&auml;v&auml;",
+          en: "At midday the fast route is often acceptable"
+        },
+        insightText: {
+          fi: "Klo 12 autoliikennett&auml; on v&auml;hemm&auml;n, joten tutut ylitykset ovat usein helpompia kuin aamuruuhkassa.",
+          en: "At 12 PM there is less car traffic, so familiar crossings are often easier than during the morning rush."
+        },
+        riskText: {
+          high: { fi: "Klo 12 liikennem&auml;&auml;r&auml; laskee, mutta ylitys vaatii silti tarkkuutta.", en: "At 12 PM traffic is lower, but the crossing still needs attention." },
+          medium: { fi: "Klo 12 kohta on yleens&auml; hallittavampi.", en: "At 12 PM this spot is usually more manageable." },
+          low: { fi: "Klo 12 aikariski on matala.", en: "At 12 PM the time-based risk is low." }
+        }
+      },
+      afternoon: {
+        recommendedRoute: "normal",
+        scoreDelta: { normal: 0.2, child: 0 },
+        trafficLevel: { fi: "Kohtalainen", en: "Moderate" },
+        insightTitle: {
+          fi: "Paluu voi olla nopeampi kuin aamumatka",
+          en: "The return trip can be faster than the morning trip"
+        },
+        insightText: {
+          fi: "Klo 14 koulusta palatessa ty&ouml;matkaruuhka ei ole viel&auml; huipussaan. Nopeampi reitti voi olla hyv&auml; valinta, jos ylitykset ovat tuttuja.",
+          en: "At 2 PM the commute peak has not fully started. The faster route can be a good choice when the crossings are familiar."
+        },
+        riskText: {
+          high: { fi: "Klo 14 kohta on parempi kuin aamulla, mutta ei riskit&ouml;n.", en: "At 2 PM this spot is better than in the morning, but not risk-free." },
+          medium: { fi: "Klo 14 liikenne on kohtalaista ja usein ennakoitavaa.", en: "At 2 PM traffic is moderate and often predictable." },
+          low: { fi: "Klo 14 aikariski on matala.", en: "At 2 PM the time-based risk is low." }
+        }
+      }
+    };
+
+    const properties = [
+      {
+        id: "aukustintie",
+        title: "Aukustintie 16",
+        homeCoord: [61.4230833333, 23.7332777778],
+        schoolCoord: [61.4144395, 23.7623261],
+        routeGeometry: {
+          normal: [[61.423933,23.734306],[61.423933,23.734306],[61.424216,23.734872],[61.424441,23.73515],[61.424768,23.735408],[61.424127,23.737124],[61.423974,23.737557],[61.423698,23.738229],[61.423485,23.738803],[61.42342,23.73906],[61.423372,23.739314],[61.423344,23.739521],[61.423334,23.739663],[61.423327,23.739834],[61.423325,23.740192],[61.423327,23.740373],[61.423318,23.740545],[61.423304,23.740676],[61.423274,23.740898],[61.423145,23.741808],[61.423062,23.742186],[61.423012,23.742341],[61.422801,23.742919],[61.422684,23.743196],[61.422579,23.743396],[61.422357,23.743768],[61.422284,23.743853],[61.422158,23.743959],[61.421824,23.744219],[61.42174,23.744324],[61.421662,23.744469],[61.421068,23.746093],[61.420955,23.746359],[61.420906,23.746453],[61.420751,23.746668],[61.420421,23.747145],[61.420384,23.747197],[61.42007,23.747627],[61.419973,23.747812],[61.419822,23.748187],[61.419651,23.748755],[61.419612,23.748869],[61.419566,23.748959],[61.41952,23.749023],[61.419443,23.749065],[61.41933,23.749096],[61.41882,23.749164],[61.418663,23.749184],[61.418505,23.749204],[61.418445,23.749212],[61.418109,23.749278],[61.41818,23.751747],[61.418213,23.752988],[61.41823,23.753394],[61.418277,23.754253],[61.418317,23.754709],[61.418399,23.7555],[61.418213,23.755731],[61.417982,23.756047],[61.417419,23.756808],[61.41689,23.757506],[61.416754,23.757756],[61.416618,23.757937],[61.416306,23.75835],[61.416191,23.758503],[61.416223,23.758606],[61.416169,23.758718],[61.416142,23.758809],[61.416146,23.758892],[61.416156,23.758964],[61.416123,23.759009],[61.416076,23.759072],[61.416033,23.759133],[61.415977,23.759037],[61.415918,23.759034],[61.415849,23.7591],[61.415794,23.759219],[61.41574,23.759329],[61.415712,23.759372],[61.4156,23.759493],[61.415345,23.759732],[61.415309,23.759817],[61.415288,23.75992],[61.415216,23.760018],[61.415169,23.76007],[61.415135,23.760061],[61.415105,23.760066],[61.41467,23.760529],[61.414529,23.760695],[61.414492,23.760746],[61.414436,23.76081],[61.414175,23.760921],[61.413689,23.76103],[61.413629,23.761039],[61.41364,23.761315],[61.413653,23.761576],[61.413688,23.762281],[61.414223,23.762196]],
+          child: [[61.423933,23.734306],[61.423933,23.734306],[61.424216,23.734872],[61.424441,23.73515],[61.424768,23.735408],[61.424127,23.737124],[61.423974,23.737557],[61.423698,23.738229],[61.423485,23.738803],[61.42342,23.73906],[61.423372,23.739314],[61.423344,23.739521],[61.423334,23.739663],[61.423327,23.739834],[61.423325,23.740192],[61.423327,23.740373],[61.423318,23.740545],[61.423304,23.740676],[61.423274,23.740898],[61.423145,23.741808],[61.423062,23.742186],[61.423012,23.742341],[61.422801,23.742919],[61.422684,23.743196],[61.422579,23.743396],[61.422357,23.743768],[61.422284,23.743853],[61.422158,23.743959],[61.421824,23.744219],[61.42174,23.744324],[61.421662,23.744469],[61.421068,23.746093],[61.420955,23.746359],[61.420906,23.746453],[61.420751,23.746668],[61.420421,23.747145],[61.420384,23.747197],[61.42007,23.747627],[61.419973,23.747812],[61.419822,23.748187],[61.419651,23.748755],[61.419612,23.748869],[61.419566,23.748959],[61.41952,23.749023],[61.419443,23.749065],[61.41933,23.749096],[61.41882,23.749164],[61.418663,23.749184],[61.418505,23.749204],[61.418445,23.749212],[61.418109,23.749278],[61.41818,23.751747],[61.418213,23.752988],[61.41823,23.753394],[61.418277,23.754253],[61.418317,23.754709],[61.418399,23.7555],[61.418213,23.755731],[61.417982,23.756047],[61.417419,23.756808],[61.41689,23.757506],[61.416754,23.757756],[61.416618,23.757937],[61.416306,23.75835],[61.416191,23.758503],[61.416223,23.758606],[61.416169,23.758718],[61.416142,23.758809],[61.416146,23.758892],[61.416156,23.758964],[61.416123,23.759009],[61.416076,23.759072],[61.416033,23.759133],[61.415977,23.759037],[61.415918,23.759034],[61.415849,23.7591],[61.415794,23.759219],[61.41574,23.759329],[61.415712,23.759372],[61.4156,23.759493],[61.415345,23.759732],[61.415309,23.759817],[61.415288,23.75992],[61.415216,23.760018],[61.415169,23.76007],[61.415135,23.760061],[61.415105,23.760066],[61.41467,23.760529],[61.414529,23.760695],[61.414492,23.760746],[61.414436,23.76081],[61.414175,23.760921],[61.413689,23.76103],[61.413629,23.761039],[61.41364,23.761315],[61.413653,23.761576],[61.413688,23.762281],[61.414223,23.762196]]
+        },
+        copy: {
+          fi: { area: "S&auml;&auml;ksj&auml;rvi, Lemp&auml;&auml;l&auml;", school: "S&auml;&auml;ksj&auml;rven yhten&auml;iskoulu, Tampereentie 422" },
+          en: { area: "S&auml;&auml;ksj&auml;rvi, Lemp&auml;&auml;l&auml;", school: "S&auml;&auml;ksj&auml;rvi Comprehensive School, Tampereentie 422" }
+        },
+        routes: {
+          normal: {
+            score: 6.9,
+            duration: "29 min",
+            distance: "2.33 km",
+            text: {
+              fi: "K&auml;velyreitti kulkee rauhallisten asuinkatujen ja j&auml;rvenrannan kevyen liikenteen v&auml;ylien kautta koululle.",
+              en: "The walking route follows quiet residential streets and lakeside walking paths toward the school."
+            }
+          },
+          child: {
+            score: 6.9,
+            duration: "29 min",
+            distance: "2.33 km",
+            text: {
+              fi: "Lapselle sopiva reitti painottaa rauhallisia v&auml;yli&auml; ja v&auml;ltt&auml;&auml; turhaa kulkua vilkkaampien teiden varressa.",
+              en: "The child-friendly route favors calmer paths and avoids unnecessary walking next to busier roads."
+            }
+          }
+        },
+      },
+      {
+        id: "hervanta",
+        title: "Kanjoninkatu 8",
+        homeCoord: [61.457438, 23.8403987],
+        schoolCoord: [61.4547967, 23.8375446],
+        routeGeometry: {
+          normal: [[61.457438,23.8403987],[61.457265,23.8405715],[61.457051,23.839646],[61.456939,23.839165],[61.456862,23.83883],[61.4568,23.838896],[61.456742,23.838955],[61.456427,23.837605],[61.456325,23.837173],[61.455824,23.837683],[61.45549,23.838002],[61.455414,23.837676],[61.45528,23.837084],[61.455226,23.836861],[61.454828,23.837283]],
+          child: [[61.457438,23.8403987],[61.457265,23.8405715],[61.457051,23.839646],[61.456939,23.839165],[61.456862,23.83883],[61.4568,23.838896],[61.456742,23.838955],[61.456427,23.837605],[61.456325,23.837173],[61.455824,23.837683],[61.45549,23.838002],[61.455414,23.837676],[61.45528,23.837084],[61.455226,23.836861],[61.454828,23.837283]]
+        },
+        copy: {
+          fi: { area: "Hervanta, Tampere", school: "Ahvenisj&auml;rven koulu, Kanjonin koulutalo" },
+          en: { area: "Hervanta, Tampere", school: "Ahvenisj&auml;rvi School, Kanjonin school building" }
+        },
+        routes: {
+          normal: {
+            score: 8.2,
+            duration: "6 min",
+            distance: "463 m",
+            text: {
+              fi: "Nopein k&auml;velyreitti koululle. Sopii, kun lapsi tuntee ylitykset ja kulkee matkan varmana.",
+              en: "Fastest walking route to school. Best when the child knows the crossings and feels confident."
+            }
+          },
+          child: {
+            score: 9.4,
+            duration: "6 min",
+            distance: "463 m",
+            text: {
+              fi: "Rauhallisempi lapsireitti suosii k&auml;vely- ja py&ouml;r&auml;v&auml;yli&auml; sek&auml; helpommin hahmotettavia ylityksi&auml;.",
+              en: "A calmer child route that favors walking and cycling paths plus easier-to-read crossings."
+            }
+          }
+        },
+},
+      {
+        id: "vuores",
+        title: "Koukkuaurankatu 7",
+        homeCoord: [61.4315, 23.8019],
+        schoolCoord: [61.4313926, 23.8164535],
+        routeGeometry: {
+          normal: [[61.431675,23.802334],[61.431675,23.802444],[61.431724,23.802432],[61.431731,23.803044],[61.431739,23.803216],[61.431742,23.803269],[61.431772,23.803495],[61.431823,23.803712],[61.431854,23.803799],[61.431951,23.803993],[61.431986,23.804058],[61.432036,23.804165],[61.431881,23.804516],[61.431785,23.804734],[61.431738,23.80484],[61.431578,23.805291],[61.431449,23.805753],[61.431332,23.80618],[61.431308,23.806273],[61.431345,23.806327],[61.431374,23.806377],[61.431453,23.806498],[61.431575,23.806746],[61.431668,23.807027],[61.431723,23.807225],[61.431875,23.807932],[61.431993,23.808453],[61.432086,23.808865],[61.432123,23.808835],[61.432157,23.808984],[61.432185,23.809118],[61.432216,23.809248],[61.432158,23.809302],[61.432171,23.809368],[61.432187,23.809457],[61.432327,23.81015],[61.432369,23.810377],[61.432446,23.811046],[61.432274,23.811148],[61.432218,23.811219],[61.432137,23.81144],[61.432133,23.811455],[61.431717,23.81293],[61.431687,23.813035],[61.431668,23.813167],[61.431531,23.814088],[61.431392,23.814691],[61.431379,23.814751],[61.431358,23.814839],[61.43167,23.815159],[61.431659,23.815214],[61.431655,23.815232],[61.431607,23.81544]],
+          child: [[61.431675,23.802334],[61.431675,23.802444],[61.431724,23.802432],[61.431731,23.803044],[61.431739,23.803216],[61.431742,23.803269],[61.431772,23.803495],[61.431823,23.803712],[61.431854,23.803799],[61.431951,23.803993],[61.431986,23.804058],[61.432036,23.804165],[61.431881,23.804516],[61.431785,23.804734],[61.431738,23.80484],[61.431578,23.805291],[61.431449,23.805753],[61.431332,23.80618],[61.431308,23.806273],[61.431345,23.806327],[61.431374,23.806377],[61.431453,23.806498],[61.431575,23.806746],[61.431668,23.807027],[61.431723,23.807225],[61.431875,23.807932],[61.431993,23.808453],[61.432086,23.808865],[61.432123,23.808835],[61.432157,23.808984],[61.432185,23.809118],[61.432216,23.809248],[61.432158,23.809302],[61.432171,23.809368],[61.432187,23.809457],[61.432327,23.81015],[61.432369,23.810377],[61.432446,23.811046],[61.432274,23.811148],[61.432218,23.811219],[61.432137,23.81144],[61.432133,23.811455],[61.431717,23.81293],[61.431687,23.813035],[61.431668,23.813167],[61.431531,23.814088],[61.431392,23.814691],[61.431379,23.814751],[61.431358,23.814839],[61.431344,23.814906],[61.431659,23.815214],[61.431655,23.815232],[61.431607,23.81544]]
+        },
+        copy: {
+          fi: { area: "Vuores, Tampere", school: "Vuoreksen koulu, Rautiolanrinne 2" },
+          en: { area: "Vuores, Tampere", school: "Vuores School, Rautiolanrinne 2" }
+        },
+        routes: {
+          normal: {
+            score: 8.8,
+            duration: "11 min",
+            distance: "846 m",
+            text: {
+              fi: "Nopeampi reitti kulkee p&auml;&auml;osin k&auml;vely- ja py&ouml;r&auml;v&auml;yli&auml; pitkin. Ylityskohdat kannattaa silti tarkistaa yhdess&auml;.",
+              en: "The faster route mostly follows walking and cycling paths. The crossings are still worth checking together."
+            }
+          },
+          child: {
+            score: 9.2,
+            duration: "15 min",
+            distance: "853 m",
+            text: {
+              fi: "Rauhallisempi lapsireitti suosii k&auml;vely- ja py&ouml;r&auml;v&auml;yli&auml; sek&auml; helpommin hahmotettavia ylityksi&auml;.",
+              en: "A calmer child route that favors walking and cycling paths plus easier-to-read crossings."
+            }
+          }
+        },
+},
+      {
+        id: "linnainmaa",
+        title: "Koilliskeskuksenkuja 3",
+        homeCoord: [61.4886, 23.891],
+        schoolCoord: [61.4915233, 23.8949718],
+        routeGeometry: {
+          normal: [[61.4886,23.890959],[61.488585,23.891138],[61.488673,23.891252],[61.488755,23.891356],[61.488777,23.891385],[61.488825,23.891419],[61.488886,23.891463],[61.489045,23.891577],[61.489064,23.89144],[61.489079,23.891338],[61.489095,23.891257],[61.489112,23.891193],[61.489428,23.891644],[61.489781,23.892147],[61.490063,23.892546],[61.490226,23.892787],[61.490307,23.892892],[61.49042,23.893042],[61.490538,23.893151],[61.490599,23.893207],[61.49064,23.893226],[61.490545,23.893712],[61.490423,23.894262],[61.4909,23.894798],[61.491022,23.8949]],
+          child: [[61.4886,23.890959],[61.488585,23.891138],[61.488673,23.891252],[61.488755,23.891356],[61.488777,23.891385],[61.488825,23.891419],[61.488886,23.891463],[61.489045,23.891577],[61.489064,23.89144],[61.489079,23.891338],[61.489095,23.891257],[61.489112,23.891193],[61.489428,23.891644],[61.489781,23.892147],[61.490063,23.892546],[61.490226,23.892787],[61.490307,23.892892],[61.49042,23.893042],[61.490538,23.893151],[61.490599,23.893207],[61.49064,23.893226],[61.490545,23.893712],[61.490423,23.894262],[61.4909,23.894798],[61.491022,23.8949]]
+        },
+        copy: {
+          fi: { area: "Linnainmaa, Tampere", school: "Linnainmaan koulu, Linnainmaankatu 12" },
+          en: { area: "Linnainmaa, Tampere", school: "Linnainmaa School, Linnainmaankatu 12" }
+        },
+        routes: {
+          normal: {
+            score: 7.6,
+            duration: "5 min",
+            distance: "425 m",
+            text: {
+              fi: "Nopein k&auml;velyreitti koululle. Lyhyt matka, mutta ylityskohdat kannattaa k&auml;yd&auml; lapsen kanssa l&auml;pi.",
+              en: "Fastest walking route to school. The trip is short, but the crossings are worth walking through with the child."
+            }
+          },
+          child: {
+            score: 9.1,
+            duration: "5 min",
+            distance: "425 m",
+            text: {
+              fi: "Rauhallisempi lapsireitti suosii k&auml;vely- ja py&ouml;r&auml;v&auml;yli&auml; sek&auml; helpommin hahmotettavia ylityksi&auml;.",
+              en: "A calmer child route that favors walking and cycling paths plus easier-to-read crossings."
+            }
+          }
+        },
+}
+    ];
+
+    const routePageMeta = {
+      aukustintie: {
+        slug: "aukustintie-16-koulumatka",
+        fullAddress: "Aukustintie 16, S&auml;&auml;ksj&auml;rvi",
+        routeName: { fi: "Aukustintie 16 - koulumatka", en: "Aukustintie 16 - school route" },
+        destinationName: { fi: "S&auml;&auml;ksj&auml;rven yhten&auml;iskoulu", en: "S&auml;&auml;ksj&auml;rvi Comprehensive School" },
+        destinationIcon: "S"
+      },
+      hervanta: {
+        slug: "kanjoninkatu-8-koulumatka",
+        fullAddress: "Kanjoninkatu 8, Hervanta",
+        routeName: { fi: "Kanjoninkatu 8 - koulumatka", en: "Kanjoninkatu 8 - school route" },
+        destinationName: { fi: "Ahvenisj&auml;rven koulu", en: "Ahvenisj&auml;rvi School" },
+        destinationIcon: "S"
+      },
+      vuores: {
+        slug: "koukkuaurankatu-7-koulumatka",
+        fullAddress: "Koukkuaurankatu 7, Vuores",
+        routeName: { fi: "Koukkuaurankatu 7 - koulumatka", en: "Koukkuaurankatu 7 - school route" },
+        destinationName: { fi: "Vuoreksen koulu", en: "Vuores School" },
+        destinationIcon: "S"
+      },
+      linnainmaa: {
+        slug: "koilliskeskuksenkuja-3-koulumatka",
+        fullAddress: "Koilliskeskuksenkuja 3, Linnainmaa",
+        routeName: { fi: "Koilliskeskuksenkuja 3 - koulumatka", en: "Koilliskeskuksenkuja 3 - school route" },
+        destinationName: { fi: "Linnainmaan koulu", en: "Linnainmaa School" },
+        destinationIcon: "S"
+      }
+    };
+
+    properties.forEach((property) => {
+      const meta = routePageMeta[property.id];
+      if (!meta) return;
+      Object.assign(property, {
+        ...meta,
+        destinationCoord: property.schoolCoord
+      });
+    });
+
+    const vuoresBase = properties.find((property) => property.id === "vuores");
+    const vuoresToPuistokatu = [[61.431675,23.802334],[61.431675,23.802444],[61.431724,23.802432],[61.431731,23.803044],[61.431739,23.803216],[61.431742,23.803269],[61.431772,23.803495],[61.431823,23.803712],[61.431854,23.803799],[61.431951,23.803993],[61.431986,23.804058],[61.432036,23.804165],[61.431881,23.804516],[61.431785,23.804734],[61.431738,23.80484],[61.431578,23.805291],[61.431449,23.805753],[61.431332,23.80618],[61.431308,23.806273],[61.431345,23.806327],[61.431374,23.806377],[61.431453,23.806498],[61.431575,23.806746],[61.431668,23.807027],[61.431723,23.807225],[61.431875,23.807932],[61.431993,23.808453],[61.432086,23.808865],[61.432216,23.809248],[61.4325639,23.8093388]];
+    const vuoresToPark = [[61.431675,23.802334],[61.431675,23.802444],[61.431724,23.802432],[61.431731,23.803044],[61.431739,23.803216],[61.431742,23.803269],[61.431772,23.803495],[61.431823,23.803712],[61.431854,23.803799],[61.431951,23.803993],[61.431986,23.804058],[61.432036,23.804165],[61.431881,23.804516],[61.431785,23.804734],[61.431738,23.80484],[61.431578,23.805291],[61.431449,23.805753],[61.431332,23.80618],[61.43174,23.80602],[61.4322319,23.8058269]];
+    const vuoresToPlayground = [[61.431675,23.802334],[61.431675,23.802444],[61.431724,23.802432],[61.431731,23.803044],[61.431739,23.803216],[61.431742,23.803269],[61.431772,23.803495],[61.431823,23.803712],[61.431854,23.803799],[61.431951,23.803993],[61.431986,23.804058],[61.432036,23.804165],[61.431881,23.804516],[61.431785,23.804734],[61.431738,23.80484],[61.431578,23.805291],[61.431449,23.805753],[61.431332,23.80618],[61.43174,23.80602],[61.4322319,23.8058269],[61.4323763,23.8062689]];
+    const vuoresToDaycare = [[61.431675,23.802334],[61.431675,23.802444],[61.431724,23.802432],[61.431731,23.803044],[61.431739,23.803216],[61.431742,23.803269],[61.431772,23.803495],[61.431823,23.803712],[61.431854,23.803799],[61.431951,23.803993],[61.431986,23.804058],[61.432036,23.804165],[61.431881,23.804516],[61.431785,23.804734],[61.431738,23.80484],[61.431578,23.805291],[61.431449,23.805753],[61.431332,23.80618],[61.431308,23.806273],[61.431345,23.806327],[61.431374,23.806377],[61.431453,23.806498],[61.431575,23.806746],[61.431668,23.807027],[61.431723,23.807225],[61.431875,23.807932],[61.431993,23.808453],[61.432086,23.808865],[61.432123,23.808835],[61.432157,23.808984],[61.432185,23.809118],[61.432216,23.809248],[61.432158,23.809302],[61.432171,23.809368],[61.432187,23.809457],[61.432327,23.81015],[61.432369,23.810377],[61.432446,23.811046],[61.432274,23.811148],[61.432218,23.811219],[61.432137,23.81144],[61.432133,23.811455],[61.431717,23.81293],[61.431687,23.813035],[61.431668,23.813167],[61.431531,23.814088],[61.431392,23.814691],[61.431379,23.814751],[61.431358,23.814839],[61.431344,23.814906],[61.431659,23.815214],[61.431655,23.815232],[61.431607,23.81544]];
+
+    function addVuoresRoutePage(config) {
+      if (!vuoresBase) return;
+      properties.push({
+        ...vuoresBase,
+        id: config.id,
+        slug: config.slug,
+        routeName: config.routeName,
+        destinationCoord: config.destinationCoord,
+        schoolCoord: config.destinationCoord,
+        destinationName: config.destinationName,
+        destinationIcon: config.destinationIcon,
+        copy: {
+          fi: { area: "Vuores, Tampere", school: config.destinationName.fi },
+          en: { area: "Vuores, Tampere", school: config.destinationName.en }
+        },
+        routeGeometry: {
+          normal: config.route,
+          child: config.childRoute || config.route
+        },
+        routes: {
+          normal: config.routeInfo.normal,
+          child: config.routeInfo.child || config.routeInfo.normal
+        },
+        precomputedRisks: null,
+        constructionSegments: []
+      });
+    }
+
+    addVuoresRoutePage({
+      id: "vuores-store",
+      slug: "koukkuaurankatu-7-lahikauppa",
+      routeName: { fi: "Koukkuaurankatu 7 - l&auml;hikauppa", en: "Koukkuaurankatu 7 - nearest grocery store" },
+      destinationName: { fi: "Sale Vuores", en: "Sale Vuores" },
+      destinationCoord: [61.4325639, 23.8093388],
+      destinationIcon: "K",
+      route: vuoresToPuistokatu,
+      routeInfo: {
+        normal: {
+          score: 8.7,
+          duration: "7 min",
+          distance: "520 m",
+          text: {
+            fi: "Lyhyt asiointireitti kulkee p&auml;&auml;osin k&auml;vely- ja py&ouml;r&auml;v&auml;yli&auml; pitkin Vuoreksen keskustaan.",
+            en: "A short everyday route that mostly follows walking and cycling paths into Vuores centre."
+          }
+        }
+      }
+    });
+
+    addVuoresRoutePage({
+      id: "vuores-park",
+      slug: "koukkuaurankatu-7-puisto",
+      routeName: { fi: "Koukkuaurankatu 7 - l&auml;hipuisto", en: "Koukkuaurankatu 7 - nearest park" },
+      destinationName: { fi: "Tervalep&auml;npuisto", en: "Tervalep&auml;npuisto park" },
+      destinationCoord: [61.4322319, 23.8058269],
+      destinationIcon: "P",
+      route: vuoresToPark,
+      routeInfo: {
+        normal: {
+          score: 9.3,
+          duration: "4 min",
+          distance: "300 m",
+          text: {
+            fi: "Puistoreitti on lyhyt ja rauhallinen. Se sopii hyvin arjen nopeaksi ulkoilureitiksi.",
+            en: "The park route is short and calm, making it a good everyday outdoor route."
+          }
+        }
+      }
+    });
+
+    addVuoresRoutePage({
+      id: "vuores-playground",
+      slug: "koukkuaurankatu-7-leikkikentta",
+      routeName: { fi: "Koukkuaurankatu 7 - leikkikentt&auml;", en: "Koukkuaurankatu 7 - playground" },
+      destinationName: { fi: "Tervalep&auml;npuiston leikkipuisto", en: "Tervalep&auml;npuisto playground" },
+      destinationCoord: [61.4323763, 23.8062689],
+      destinationIcon: "L",
+      route: vuoresToPlayground,
+      routeInfo: {
+        normal: {
+          score: 9.1,
+          duration: "5 min",
+          distance: "350 m",
+          text: {
+            fi: "Reitti leikkikent&auml;lle pysyy p&auml;&auml;osin rauhallisilla v&auml;ylill&auml; ja on helppo hahmottaa lapsen kanssa.",
+            en: "The playground route stays mostly on calm paths and is easy to understand with a child."
+          }
+        }
+      }
+    });
+
+    addVuoresRoutePage({
+      id: "vuores-daycare",
+      slug: "koukkuaurankatu-7-paivakoti",
+      routeName: { fi: "Koukkuaurankatu 7 - p&auml;iv&auml;koti", en: "Koukkuaurankatu 7 - daycare" },
+      destinationName: { fi: "Vuoreksen p&auml;iv&auml;koti", en: "Vuores daycare" },
+      destinationCoord: [61.431607, 23.81544],
+      destinationIcon: "D",
+      route: vuoresToDaycare,
+      routeInfo: {
+        normal: {
+          score: 8.8,
+          duration: "11 min",
+          distance: "850 m",
+          text: {
+            fi: "P&auml;iv&auml;kotireitti kulkee Vuoreksen keskuksen rauhallisia k&auml;vely- ja py&ouml;r&auml;v&auml;yli&auml; pitkin.",
+            en: "The daycare route follows calm walking and cycling paths through central Vuores."
+          }
+        }
+      }
+    });
+
+    function addApartmentRoutePage(config) {
+      properties.push({
+        id: config.id,
+        title: config.title,
+        slug: config.slug,
+        fullAddress: config.fullAddress,
+        homeCoord: config.homeCoord,
+        destinationCoord: config.destinationCoord,
+        schoolCoord: config.destinationCoord,
+        destinationName: config.destinationName,
+        destinationIcon: config.destinationIcon,
+        routeName: config.routeName,
+        copy: {
+          fi: { area: config.area.fi, school: config.destinationName.fi },
+          en: { area: config.area.en, school: config.destinationName.en }
+        },
+        routeGeometry: {
+          normal: config.route,
+          child: config.childRoute || config.route
+        },
+        routes: {
+          normal: config.routeInfo.normal,
+          child: config.routeInfo.child || config.routeInfo.normal
+        },
+        precomputedRisks: null,
+        constructionSegments: []
+      });
+    }
+
+    function addRouteSet(config) {
+      const base = {
+        title: config.title,
+        fullAddress: config.fullAddress,
+        homeCoord: config.homeCoord,
+        area: config.area
+      };
+
+      config.routes.forEach((route) => addApartmentRoutePage({
+        ...base,
+        ...route,
+        id: `${config.idPrefix}-${route.key}`,
+        slug: `${config.slug}-${route.key}`
+      }));
+    }
+
+    addRouteSet({
+      idPrefix: "kaakamonkaari",
+      slug: "kaakamonkaari-6-a-34",
+      title: "Kaakamonkaari 6 A 34",
+      fullAddress: "Kaakamonkaari 6 A 34, Hervantaj&auml;rvi",
+      homeCoord: [61.4375344, 23.8736108],
+      area: { fi: "Hervantaj&auml;rvi, Tampere", en: "Hervantaj&auml;rvi, Tampere" },
+      routes: [
+        {
+          key: "school",
+          routeName: { fi: "Kaakamonkaari 6 A 34 - koulumatka", en: "Kaakamonkaari 6 A 34 - school route" },
+          destinationName: { fi: "Etel&auml;-Hervannan koulu", en: "Etel&auml;-Hervanta School" },
+          destinationCoord: [61.4432585, 23.8498033],
+          destinationIcon: "S",
+          route: [[61.437534,23.873611],[61.437586,23.873642],[61.437662,23.873683],[61.437748,23.873706],[61.437756,23.873592],[61.4378,23.872934],[61.437843,23.87196],[61.43783,23.871849],[61.43786,23.871666],[61.437876,23.871582],[61.437884,23.871529],[61.437883,23.871499],[61.437926,23.871456],[61.437957,23.871392],[61.437974,23.871309],[61.437997,23.871231],[61.438026,23.871156],[61.438069,23.871097],[61.438121,23.871028],[61.438169,23.870912],[61.438203,23.870794],[61.438214,23.870701],[61.438206,23.870595],[61.438278,23.870559],[61.438278,23.870555],[61.43816,23.869343],[61.438205,23.869324],[61.438224,23.869316],[61.438238,23.86931],[61.438268,23.869297],[61.438281,23.869291],[61.438295,23.869285],[61.438393,23.869252],[61.438421,23.869242],[61.4385,23.869202],[61.438468,23.868959],[61.438431,23.868676],[61.438333,23.867921],[61.438304,23.867708],[61.438269,23.867418],[61.438248,23.867132],[61.438244,23.867084],[61.438244,23.867066],[61.438239,23.866741],[61.438242,23.86647],[61.43826,23.866205],[61.438286,23.865924],[61.438327,23.865666],[61.438352,23.865523],[61.438403,23.865265],[61.438474,23.864982],[61.438594,23.864552],[61.438649,23.864397],[61.43867,23.864343],[61.438706,23.864279],[61.438741,23.864244],[61.438796,23.864231],[61.438866,23.864252],[61.438929,23.864292],[61.438974,23.864312],[61.438986,23.864228],[61.439014,23.864139],[61.439078,23.864035],[61.439152,23.863969],[61.439258,23.863874],[61.439453,23.863693],[61.439633,23.863513],[61.439666,23.863476],[61.439783,23.863311],[61.439889,23.863089],[61.439999,23.862883],[61.440065,23.862785],[61.440138,23.8627],[61.440442,23.862466],[61.440767,23.862253],[61.441031,23.862031],[61.441707,23.861425],[61.442283,23.86097],[61.442268,23.860871],[61.44224,23.860727],[61.44221,23.860525],[61.442246,23.860479],[61.442278,23.860387],[61.442293,23.860232],[61.442232,23.859282],[61.442286,23.859266],[61.442265,23.858991],[61.44226,23.858923],[61.442254,23.858898],[61.442192,23.858624],[61.442235,23.858578],[61.442246,23.858566],[61.442226,23.858503],[61.44221,23.858433],[61.442197,23.858378],[61.442185,23.858326],[61.442125,23.85807],[61.442064,23.857806],[61.442018,23.857607],[61.441931,23.857235],[61.441878,23.857007],[61.441853,23.856867],[61.44184,23.856778],[61.441831,23.856677],[61.441825,23.856586],[61.441823,23.856489],[61.441825,23.856401],[61.441828,23.856307],[61.441833,23.856229],[61.441896,23.855608],[61.441966,23.854935],[61.442032,23.854271],[61.442096,23.853639],[61.442135,23.853271],[61.442155,23.85308],[61.442165,23.852922],[61.44217,23.852791],[61.44217,23.85268],[61.442169,23.852612],[61.442166,23.852573],[61.442161,23.852514],[61.44215,23.852424],[61.442143,23.852369],[61.442136,23.852321],[61.442125,23.852255],[61.442104,23.852151],[61.442069,23.851994],[61.441979,23.851595],[61.441997,23.851578],[61.442266,23.851308],[61.442393,23.851179],[61.442589,23.850987],[61.442928,23.850648],[61.442779,23.850019],[61.443042,23.849778],[61.443214,23.849606]],
+          routeInfo: {
+            normal: {
+              score: 7.7,
+              duration: "24 min",
+              distance: "1.8 km",
+              text: {
+                fi: "Koulureitti kulkee Hervantaj&auml;rven asuinalueelta Etel&auml;-Hervannan palveluiden suuntaan.",
+                en: "The school route runs from Hervantaj&auml;rvi toward the Etel&auml;-Hervanta services."
+              }
+            }
+          }
+        },
+        {
+          key: "store",
+          routeName: { fi: "Kaakamonkaari 6 A 34 - l&auml;hikauppa", en: "Kaakamonkaari 6 A 34 - nearest grocery store" },
+          destinationName: { fi: "S-market Hervanta", en: "S-market Hervanta" },
+          destinationCoord: [61.4506671, 23.8512375],
+          destinationIcon: "K",
+          route: [[61.437534,23.873611],[61.437586,23.873642],[61.437662,23.873683],[61.437748,23.873706],[61.437756,23.873592],[61.437835,23.873598],[61.438027,23.873614],[61.438211,23.873582],[61.438243,23.873568],[61.438337,23.873529],[61.438419,23.873484],[61.438478,23.873451],[61.438588,23.873354],[61.438693,23.873252],[61.438694,23.873175],[61.438771,23.873097],[61.438843,23.873032],[61.438878,23.873162],[61.438957,23.873502],[61.439122,23.873308],[61.439313,23.873071],[61.43934,23.873039],[61.439406,23.87296],[61.439481,23.872887],[61.439591,23.872783],[61.439623,23.872753],[61.439881,23.872516],[61.440062,23.872337],[61.440095,23.872238],[61.440152,23.872186],[61.440194,23.872152],[61.44031,23.872056],[61.440347,23.872219],[61.44038,23.872197],[61.440424,23.87217],[61.440505,23.872118],[61.440574,23.87207],[61.440665,23.871989],[61.440751,23.871919],[61.440811,23.871846],[61.440847,23.871777],[61.44088,23.871713],[61.44094,23.871599],[61.441,23.871463],[61.441271,23.87098],[61.441307,23.870883],[61.441342,23.87081],[61.441394,23.870728],[61.441451,23.870668],[61.441533,23.870598],[61.441541,23.870593],[61.441629,23.87054],[61.441697,23.870503],[61.441767,23.870466],[61.441806,23.87044],[61.441758,23.870236],[61.441673,23.869845],[61.441605,23.869461],[61.441547,23.868976],[61.441517,23.868573],[61.441503,23.868042],[61.441503,23.867909],[61.441512,23.867608],[61.441527,23.867359],[61.44154,23.867141],[61.44161,23.866534],[61.441646,23.866261],[61.441729,23.865767],[61.441858,23.865255],[61.441924,23.865019],[61.44197,23.864869],[61.442093,23.864518],[61.442236,23.864188],[61.442368,23.86392],[61.44252,23.863665],[61.442595,23.86356],[61.442675,23.863449],[61.442704,23.863349],[61.442708,23.863255],[61.442754,23.863216],[61.442803,23.863176],[61.442831,23.863225],[61.442889,23.86323],[61.443007,23.863137],[61.443071,23.863085],[61.443147,23.863024],[61.44327,23.862949],[61.443272,23.86302],[61.443444,23.862919],[61.443636,23.862843],[61.443601,23.862428],[61.443596,23.862373],[61.443586,23.86226],[61.443563,23.861988],[61.443539,23.861709],[61.443545,23.861607],[61.443565,23.861518],[61.443643,23.861402],[61.443736,23.8613],[61.4438,23.861228],[61.443858,23.86114],[61.443873,23.861109],[61.443912,23.86103],[61.443955,23.860922],[61.444011,23.86074],[61.444074,23.860533],[61.444102,23.860442],[61.444135,23.860351],[61.444178,23.86025],[61.444307,23.859995],[61.444347,23.859929],[61.444389,23.85988],[61.444482,23.859769],[61.444528,23.859715],[61.44459,23.859641],[61.444594,23.859633],[61.444642,23.859524],[61.444681,23.859443],[61.444758,23.859301],[61.444865,23.859156],[61.444947,23.859069],[61.444981,23.859006],[61.445005,23.858949],[61.445023,23.858888],[61.445057,23.858751],[61.445082,23.858645],[61.445101,23.858568],[61.445127,23.858444],[61.445134,23.858391],[61.445142,23.858332],[61.445144,23.858266],[61.445144,23.858218],[61.445136,23.858161],[61.445112,23.858045],[61.445094,23.857959],[61.445049,23.857794],[61.44501,23.857634],[61.445494,23.857059],[61.445521,23.857037],[61.445539,23.857013],[61.445554,23.856974],[61.445566,23.856929],[61.445568,23.85689],[61.445562,23.85683],[61.445555,23.856782],[61.445545,23.856729],[61.445683,23.856565],[61.446284,23.85585],[61.446401,23.855716],[61.446422,23.855799],[61.446433,23.85584],[61.446449,23.855873],[61.446471,23.85592],[61.446486,23.855956],[61.446514,23.855928],[61.446545,23.855888],[61.4466,23.855828],[61.446697,23.85572],[61.446718,23.855708],[61.44719,23.855168],[61.447451,23.854868],[61.447473,23.854965],[61.447857,23.854499],[61.448006,23.854331],[61.44809,23.85423],[61.448074,23.854043],[61.448152,23.853972],[61.448237,23.853902],[61.448308,23.85385],[61.448529,23.853824],[61.448788,23.85377],[61.449001,23.853738],[61.449104,23.853729],[61.449154,23.853525],[61.44927,23.853044],[61.449275,23.853021],[61.449309,23.852888],[61.449348,23.852737],[61.449349,23.852561],[61.449342,23.852343],[61.449362,23.85224],[61.449411,23.852145],[61.449491,23.852064],[61.449703,23.851915],[61.449744,23.851875],[61.449793,23.851828],[61.449877,23.851747],[61.450045,23.851586],[61.450097,23.851535],[61.450072,23.851427],[61.450177,23.851322],[61.450262,23.851236],[61.450339,23.851158],[61.450401,23.851115],[61.450443,23.851078],[61.450592,23.850923]],
+          routeInfo: {
+            normal: {
+              score: 7.3,
+              duration: "30 min",
+              distance: "2.3 km",
+              text: {
+                fi: "L&auml;hikauppareitti vie Hervannan palvelukeskittym&auml;&auml;n. Matka on pidempi, joten arjen kauppak&auml;ynti kannattaa arvioida realistisesti.",
+                en: "The grocery route goes to the Hervanta service centre. It is a longer walk, so everyday shopping is worth judging realistically."
+              }
+            }
+          }
+        },
+        {
+          key: "park",
+          routeName: { fi: "Kaakamonkaari 6 A 34 - l&auml;hipuisto", en: "Kaakamonkaari 6 A 34 - nearest park" },
+          destinationName: { fi: "Hakkisen puistikko", en: "Hakkisen puistikko" },
+          destinationCoord: [61.4361965, 23.8737064],
+          destinationIcon: "P",
+          route: [[61.437534,23.873611],[61.43737,23.873512],[61.437278,23.873428],[61.437172,23.87332],[61.437014,23.87311],[61.436925,23.872983],[61.436857,23.872851],[61.436679,23.872482],[61.436227,23.873253],[61.436103,23.873474]],
+          routeInfo: {
+            normal: {
+              score: 9.5,
+              duration: "3 min",
+              distance: "200 m",
+              text: {
+                fi: "L&auml;hipuisto on aivan asuinalueen vieress&auml; ja sopii nopeaan ulkoiluun.",
+                en: "The nearest park is right next to the residential area and works well for quick outdoor time."
+              }
+            }
+          }
+        },
+        {
+          key: "playground",
+          routeName: { fi: "Kaakamonkaari 6 A 34 - leikkikentt&auml;", en: "Kaakamonkaari 6 A 34 - playground" },
+          destinationName: { fi: "Joutsenpuiston leikkikentt&auml;", en: "Joutsenpuisto playground" },
+          destinationCoord: [61.4381265, 23.8711949],
+          destinationIcon: "L",
+          route: [[61.437534,23.873611],[61.437586,23.873642],[61.437662,23.873683],[61.437748,23.873706],[61.437756,23.873592],[61.4378,23.872934],[61.437843,23.87196],[61.43783,23.871849],[61.43786,23.871666],[61.437876,23.871582],[61.437884,23.871529],[61.437883,23.871499],[61.437926,23.871456],[61.437957,23.871392],[61.437974,23.871309],[61.437997,23.871231],[61.438026,23.871156],[61.438069,23.871097],[61.438089,23.87107]],
+          routeInfo: {
+            normal: {
+              score: 9.4,
+              duration: "2 min",
+              distance: "180 m",
+              text: {
+                fi: "Leikkikentt&auml; on hyvin l&auml;hell&auml; ja reitti on lapsen kanssa helppo hahmottaa.",
+                en: "The playground is very close and the route is easy to understand with a child."
+              }
+            }
+          }
+        },
+        {
+          key: "daycare",
+          routeName: { fi: "Kaakamonkaari 6 A 34 - p&auml;iv&auml;koti", en: "Kaakamonkaari 6 A 34 - daycare" },
+          destinationName: { fi: "Helapuiston p&auml;iv&auml;koti", en: "Helapuisto daycare" },
+          destinationCoord: [61.4414692, 23.8514284],
+          destinationIcon: "D",
+          route: [[61.437534,23.873611],[61.437586,23.873642],[61.437662,23.873683],[61.437748,23.873706],[61.437756,23.873592],[61.4378,23.872934],[61.437843,23.87196],[61.43783,23.871849],[61.43786,23.871666],[61.437876,23.871582],[61.437884,23.871529],[61.437883,23.871499],[61.437926,23.871456],[61.437957,23.871392],[61.437974,23.871309],[61.437997,23.871231],[61.438026,23.871156],[61.438069,23.871097],[61.438121,23.871028],[61.438169,23.870912],[61.438203,23.870794],[61.438214,23.870701],[61.438206,23.870595],[61.438278,23.870559],[61.438278,23.870555],[61.43816,23.869343],[61.438205,23.869324],[61.438224,23.869316],[61.438238,23.86931],[61.438268,23.869297],[61.438281,23.869291],[61.438295,23.869285],[61.438393,23.869252],[61.438421,23.869242],[61.4385,23.869202],[61.438468,23.868959],[61.438431,23.868676],[61.438333,23.867921],[61.438304,23.867708],[61.438269,23.867418],[61.438248,23.867132],[61.438244,23.867084],[61.438244,23.867066],[61.438239,23.866741],[61.438242,23.86647],[61.43826,23.866205],[61.438286,23.865924],[61.438327,23.865666],[61.438352,23.865523],[61.438403,23.865265],[61.438474,23.864982],[61.438594,23.864552],[61.438649,23.864397],[61.43867,23.864343],[61.438706,23.864279],[61.438741,23.864244],[61.438796,23.864231],[61.438866,23.864252],[61.438929,23.864292],[61.438974,23.864312],[61.438986,23.864228],[61.439014,23.864139],[61.439078,23.864035],[61.439152,23.863969],[61.439258,23.863874],[61.439453,23.863693],[61.439633,23.863513],[61.439666,23.863476],[61.439783,23.863311],[61.439889,23.863089],[61.439999,23.862883],[61.440065,23.862785],[61.440138,23.8627],[61.440442,23.862466],[61.440767,23.862253],[61.441031,23.862031],[61.441707,23.861425],[61.442283,23.86097],[61.442268,23.860871],[61.44224,23.860727],[61.44221,23.860525],[61.442246,23.860479],[61.442278,23.860387],[61.442293,23.860232],[61.442232,23.859282],[61.442286,23.859266],[61.442265,23.858991],[61.44226,23.858923],[61.442254,23.858898],[61.442192,23.858624],[61.442235,23.858578],[61.442246,23.858566],[61.442226,23.858503],[61.44221,23.858433],[61.442197,23.858378],[61.442185,23.858326],[61.442125,23.85807],[61.442064,23.857806],[61.442018,23.857607],[61.441931,23.857235],[61.441878,23.857007],[61.441853,23.856867],[61.44184,23.856778],[61.441831,23.856677],[61.441825,23.856586],[61.441823,23.856489],[61.441825,23.856401],[61.441828,23.856307],[61.441833,23.856229],[61.441896,23.855608],[61.441966,23.854935],[61.442032,23.854271],[61.442096,23.853639],[61.442135,23.853271],[61.442155,23.85308],[61.442165,23.852922],[61.44217,23.852791],[61.44217,23.85268],[61.442169,23.852612],[61.442109,23.852582],[61.442048,23.85255],[61.442041,23.852483],[61.442035,23.852437],[61.442009,23.852297],[61.441996,23.85224],[61.441906,23.851853],[61.441765,23.851243],[61.441704,23.851303],[61.441665,23.851343],[61.441648,23.851264],[61.441615,23.851247],[61.441504,23.851348],[61.441484,23.851442]],
+          routeInfo: {
+            normal: {
+              score: 7.8,
+              duration: "22 min",
+              distance: "1.7 km",
+              text: {
+                fi: "P&auml;iv&auml;kotireitti kulkee Hervantaj&auml;rvelt&auml; Etel&auml;-Hervannan suuntaan.",
+                en: "The daycare route runs from Hervantaj&auml;rvi toward Etel&auml;-Hervanta."
+              }
+            }
+          }
+        }
+      ]
+    });
+
+    addRouteSet({
+      idPrefix: "sammonkatu",
+      slug: "sammonkatu-29-31-b",
+      title: "Sammonkatu 29-31 B",
+      fullAddress: "Sammonkatu 29-31 B, Kaleva",
+      homeCoord: [61.4966841, 23.8030760],
+      area: { fi: "Kaleva, Tampere", en: "Kaleva, Tampere" },
+      routes: [
+        {
+          key: "school",
+          routeName: { fi: "Sammonkatu 29-31 B - koulumatka", en: "Sammonkatu 29-31 B - school route" },
+          destinationName: { fi: "Sammon koulu ja p&auml;iv&auml;koti", en: "Sammon School and daycare" },
+          destinationCoord: [61.4988064, 23.7989059],
+          destinationIcon: "S",
+          route: [[61.496618,23.803029],[61.496632,23.802942],[61.496665,23.802742],[61.496705,23.802497],[61.496715,23.802437],[61.496782,23.80203],[61.496826,23.801745],[61.497415,23.80215],[61.497471,23.801798],[61.497622,23.800914],[61.497663,23.800648],[61.497695,23.800444],[61.497748,23.800107],[61.497796,23.799811],[61.497872,23.799304],[61.49794,23.798832],[61.497996,23.798428],[61.498035,23.798445],[61.498092,23.798469],[61.498088,23.798514],[61.498092,23.798551],[61.498104,23.798576],[61.498112,23.79859],[61.498135,23.798629],[61.498203,23.798753],[61.498414,23.799134],[61.498521,23.799333],[61.498597,23.799496],[61.49861,23.799442],[61.498651,23.799038],[61.498651,23.799038]],
+          routeInfo: {
+            normal: {
+              score: 8.4,
+              duration: "6 min",
+              distance: "470 m",
+              text: {
+                fi: "Koulureitti on lyhyt kaupunkireitti Kalevan korttelien l&auml;pi.",
+                en: "The school route is a short urban walk through Kaleva blocks."
+              }
+            }
+          }
+        },
+        {
+          key: "store",
+          routeName: { fi: "Sammonkatu 29-31 B - l&auml;hikauppa", en: "Sammonkatu 29-31 B - nearest grocery store" },
+          destinationName: { fi: "K-Market Domus", en: "K-Market Domus" },
+          destinationCoord: [61.4966841, 23.8030760],
+          destinationIcon: "K",
+          route: [[61.496618,23.803029],[61.496593,23.803182]],
+          routeInfo: {
+            normal: {
+              score: 9.9,
+              duration: "1 min",
+              distance: "10 m",
+              text: {
+                fi: "L&auml;hikauppa on k&auml;yt&auml;nn&ouml;ss&auml; samassa korttelissa, joten asiointi onnistuu eritt&auml;in helposti.",
+                en: "The grocery store is practically in the same block, making everyday shopping very easy."
+              }
+            }
+          }
+        },
+        {
+          key: "park",
+          routeName: { fi: "Sammonkatu 29-31 B - l&auml;hipuisto", en: "Sammonkatu 29-31 B - nearest park" },
+          destinationName: { fi: "Viipurinpuisto", en: "Viipurinpuisto" },
+          destinationCoord: [61.4956353, 23.8016831],
+          destinationIcon: "P",
+          route: [[61.496618,23.803029],[61.496553,23.80343],[61.496516,23.8034],[61.496482,23.803377],[61.496421,23.803334],[61.496393,23.803315],[61.496323,23.803266],[61.496259,23.803218],[61.496367,23.802562],[61.496438,23.802107],[61.496397,23.802082],[61.496085,23.801896],[61.495819,23.801696],[61.495725,23.801658],[61.495637,23.801639]],
+          routeInfo: {
+            normal: {
+              score: 9.2,
+              duration: "3 min",
+              distance: "210 m",
+              text: {
+                fi: "L&auml;hipuisto on lyhyen k&auml;velyn p&auml;&auml;ss&auml; Sammonkadun varrelta.",
+                en: "The nearest park is a short walk from Sammonkatu."
+              }
+            }
+          }
+        },
+        {
+          key: "playground",
+          routeName: { fi: "Sammonkatu 29-31 B - leikkikentt&auml;", en: "Sammonkatu 29-31 B - playground" },
+          destinationName: { fi: "L&auml;hileikkipaikka", en: "Nearby playground" },
+          destinationCoord: [61.4951442, 23.8077914],
+          destinationIcon: "L",
+          route: [[61.496618,23.803029],[61.496553,23.80343],[61.496541,23.803498],[61.496525,23.803589],[61.496512,23.80367],[61.496492,23.80377],[61.496455,23.803937],[61.496394,23.803883],[61.49636,23.80385],[61.496349,23.803879],[61.496079,23.80517],[61.496071,23.805206],[61.496043,23.80518],[61.496017,23.805156],[61.495987,23.805128],[61.495952,23.805096],[61.495887,23.805035],[61.495861,23.805158],[61.495756,23.805665],[61.495627,23.806282],[61.495615,23.806341],[61.495513,23.806826],[61.495375,23.807482],[61.495349,23.807615],[61.495227,23.808204],[61.49514,23.808117],[61.495161,23.80801],[61.495107,23.807957]],
+          routeInfo: {
+            normal: {
+              score: 8.5,
+              duration: "5 min",
+              distance: "370 m",
+              text: {
+                fi: "Leikkipaikkareitti on lyhyt, mutta kulkee kaupunkikortteleissa, joten ylitykset kannattaa tarkistaa.",
+                en: "The playground route is short, but it runs through urban blocks, so crossings are worth checking."
+              }
+            }
+          }
+        },
+        {
+          key: "daycare",
+          routeName: { fi: "Sammonkatu 29-31 B - p&auml;iv&auml;koti", en: "Sammonkatu 29-31 B - daycare" },
+          destinationName: { fi: "Ainikin p&auml;iv&auml;koti", en: "Ainikki daycare" },
+          destinationCoord: [61.4983732, 23.8092989],
+          destinationIcon: "D",
+          route: [[61.496618,23.803029],[61.496553,23.80343],[61.496541,23.803498],[61.496525,23.803589],[61.496749,23.803755],[61.497059,23.803981],[61.497043,23.804064],[61.49703,23.804147],[61.497044,23.80418],[61.497052,23.804231],[61.497093,23.804274],[61.497138,23.804299],[61.497148,23.80428],[61.497166,23.804265],[61.497187,23.804267],[61.497203,23.804274],[61.497586,23.804704],[61.497613,23.804742],[61.497623,23.804767],[61.497628,23.804794],[61.497676,23.804859],[61.49773,23.80493],[61.497713,23.804932],[61.497703,23.804953],[61.497698,23.804988],[61.49765,23.805895],[61.497596,23.806927],[61.497542,23.807966],[61.497488,23.808994],[61.497438,23.809943],[61.497436,23.809993],[61.497441,23.810192],[61.497992,23.810255],[61.498092,23.810256],[61.498091,23.810296],[61.498167,23.81029],[61.498515,23.810342],[61.498528,23.810249],[61.498558,23.809748],[61.498573,23.809703],[61.498573,23.809703]],
+          routeInfo: {
+            normal: {
+              score: 8.2,
+              duration: "9 min",
+              distance: "640 m",
+              text: {
+                fi: "P&auml;iv&auml;kotireitti on lyhyt Kalevan sis&auml;inen k&auml;vely, jossa suurin huomio on kadunylityksiss&auml;.",
+                en: "The daycare route is a short walk within Kaleva, with the main attention on street crossings."
+              }
+            }
+          }
+        }
+      ]
+    });
+
+
+
+    addRouteSet({
+      idPrefix: "saaksjarvi",
+      slug: "aukustintie-16",
+      title: "Aukustintie 16",
+      fullAddress: "Aukustintie 16, S&auml;&auml;ksj&auml;rvi",
+      homeCoord: [61.4230833333, 23.7332777778],
+      area: { fi: "S&auml;&auml;ksj&auml;rvi, Lemp&auml;&auml;l&auml;", en: "S&auml;&auml;ksj&auml;rvi, Lemp&auml;&auml;l&auml;" },
+      routes: [
+        {
+          key: "store",
+          routeName: { fi: "Aukustintie 16 - l&auml;hikauppa", en: "Aukustintie 16 - nearest grocery store" },
+          destinationName: { fi: "S-market S&auml;&auml;ksj&auml;rvi", en: "S-market S&auml;&auml;ksj&auml;rvi" },
+          destinationCoord: [61.4160865, 23.7573516],
+          destinationIcon: "K",
+          route: [[61.423083,23.733278],[61.423155,23.734041],[61.423265,23.733926],[61.423328,23.733881],[61.42341,23.733878],[61.423541,23.73392],[61.423725,23.734029],[61.423815,23.734124],[61.423933,23.734306],[61.424216,23.734873],[61.424441,23.73515],[61.424768,23.735408],[61.424127,23.737124],[61.423974,23.737557],[61.424017,23.737624],[61.423989,23.737695],[61.423966,23.737703],[61.423943,23.737727],[61.423717,23.738285],[61.42352,23.738827],[61.423458,23.739097],[61.423451,23.739203],[61.423433,23.739313],[61.423417,23.739407],[61.423381,23.739574],[61.42337,23.739724],[61.423365,23.739961],[61.423368,23.740295],[61.42336,23.740484],[61.423345,23.740617],[61.42332,23.740787],[61.423298,23.740908],[61.423274,23.740898],[61.423241,23.740882],[61.423209,23.741083],[61.423139,23.741507],[61.4231,23.741746],[61.423052,23.741997],[61.423018,23.742134],[61.422969,23.742321],[61.42285,23.742678],[61.422805,23.742745],[61.422758,23.742839],[61.422726,23.742926],[61.422719,23.742991],[61.422695,23.74306],[61.422597,23.743255],[61.42248,23.743431],[61.42233,23.743692],[61.422279,23.743763],[61.422216,23.743813],[61.422142,23.743859],[61.422059,23.743927],[61.42185,23.744064],[61.421752,23.74417],[61.421699,23.744255],[61.421586,23.744512],[61.421325,23.745263],[61.421249,23.745481],[61.421233,23.745535],[61.420936,23.746288],[61.420838,23.746464],[61.4208,23.746515],[61.42076,23.746531],[61.420723,23.746584],[61.420364,23.747119],[61.420251,23.747278],[61.420057,23.747565],[61.419969,23.747715],[61.419786,23.748127],[61.419628,23.74867],[61.419588,23.748786],[61.419533,23.748888],[61.419479,23.748955],[61.419434,23.748984],[61.418502,23.749113],[61.418107,23.749169],[61.418006,23.749188],[61.418008,23.749293],[61.418061,23.751054],[61.418067,23.751226],[61.418128,23.751763],[61.418158,23.752975],[61.418165,23.753145],[61.417985,23.753169],[61.417991,23.753237],[61.417783,23.753391],[61.417713,23.753442],[61.4174,23.753672],[61.417105,23.75389],[61.416628,23.754241],[61.416139,23.754601],[61.41609,23.754676],[61.416058,23.754807],[61.416063,23.754952],[61.416119,23.755464],[61.416254,23.756478],[61.416257,23.756502],[61.41622,23.756528],[61.416016,23.756574],[61.415794,23.756895],[61.41577,23.75693],[61.415805,23.757276],[61.415823,23.757261],[61.415921,23.757577]],
+          routeInfo: {
+            normal: {
+              score: 7.4,
+              duration: "27 min",
+              distance: "2 km",
+              text: {
+                fi: "L&auml;hikauppareitti kulkee S&auml;&auml;ksj&auml;rven palveluiden suuntaan ja sis&auml;lt&auml;&auml; Tampereentien l&auml;heisi&auml; ylityksi&auml;.",
+                en: "The grocery route heads toward the S&auml;&auml;ksj&auml;rvi services and includes crossings near Tampereentie."
+              }
+            }
+          }
+        },
+        {
+          key: "park",
+          routeName: { fi: "Aukustintie 16 - l&auml;hipuisto", en: "Aukustintie 16 - nearest park" },
+          destinationName: { fi: "Vuoreksenpuisto", en: "Vuoreksenpuisto" },
+          destinationCoord: [61.4339875, 23.7541411],
+          destinationIcon: "P",
+          route: [[61.423083,23.733278],[61.422843,23.732848],[61.422831,23.732876],[61.422608,23.733247],[61.422352,23.733548],[61.42217,23.733882],[61.422173,23.733948],[61.42214,23.734058],[61.42214,23.734197],[61.422091,23.734542],[61.422051,23.734831],[61.422049,23.735071],[61.422079,23.735155],[61.422095,23.735372],[61.422089,23.735511],[61.422112,23.735717],[61.422101,23.735936],[61.422126,23.736051],[61.422137,23.736099],[61.42216,23.736384],[61.422126,23.736768],[61.422127,23.737512],[61.422078,23.737569],[61.42206,23.737641],[61.422023,23.737681],[61.422005,23.737748],[61.421971,23.737978],[61.421949,23.738076],[61.421889,23.738141],[61.421867,23.73819],[61.421851,23.738227],[61.42182,23.738271],[61.421791,23.738387],[61.421855,23.738454],[61.421904,23.738519],[61.421992,23.738541],[61.422069,23.738631],[61.422057,23.738781],[61.422062,23.738829],[61.422086,23.739026],[61.421973,23.739004],[61.421935,23.739966],[61.421899,23.74043],[61.421845,23.740881],[61.421809,23.741185],[61.421805,23.741508],[61.421847,23.741642],[61.422008,23.741911],[61.422097,23.741989],[61.422307,23.742127],[61.422404,23.742273],[61.422758,23.742839],[61.422726,23.742926],[61.422719,23.742991],[61.422695,23.74306],[61.422597,23.743255],[61.42248,23.743431],[61.42233,23.743692],[61.422279,23.743763],[61.422216,23.743813],[61.422142,23.743859],[61.422059,23.743927],[61.42185,23.744064],[61.421752,23.74417],[61.421699,23.744255],[61.421586,23.744512],[61.421325,23.745263],[61.421249,23.745481],[61.421233,23.745535],[61.420936,23.746288],[61.420838,23.746464],[61.4208,23.746515],[61.42076,23.746531],[61.420723,23.746584],[61.420364,23.747119],[61.420251,23.747278],[61.420057,23.747565],[61.419969,23.747715],[61.419786,23.748127],[61.419628,23.74867],[61.419588,23.748786],[61.419533,23.748888],[61.419479,23.748955],[61.419434,23.748984],[61.418502,23.749113],[61.418107,23.749169],[61.418006,23.749188],[61.418008,23.749293],[61.418061,23.751054],[61.418067,23.751226],[61.418128,23.751763],[61.418158,23.752975],[61.418165,23.753145],[61.417985,23.753169],[61.417978,23.753104],[61.417986,23.75301],[61.418024,23.752908],[61.418096,23.752828],[61.418661,23.752473],[61.418829,23.752405],[61.418913,23.752414],[61.41893,23.752691],[61.419101,23.752613],[61.419234,23.753112],[61.419724,23.75257],[61.419837,23.752635],[61.41988,23.75268],[61.419932,23.752911],[61.420021,23.753532],[61.420091,23.753485],[61.420115,23.753681],[61.420197,23.75363],[61.420318,23.753566],[61.420485,23.753515],[61.42072,23.753471],[61.421643,23.753388],[61.422159,23.753359],[61.422556,23.753337],[61.422955,23.753293],[61.423372,23.753268],[61.424282,23.753214],[61.424566,23.753203],[61.42529,23.753168],[61.425452,23.75316],[61.426207,23.753114],[61.426911,23.753063],[61.427022,23.753056],[61.42736,23.753052],[61.427778,23.753052],[61.42814,23.75304],[61.428525,23.753026],[61.429125,23.752984],[61.429374,23.752919],[61.429526,23.752847],[61.429759,23.752694],[61.430018,23.752464],[61.430439,23.752026],[61.431047,23.751402],[61.431807,23.750597],[61.431978,23.750473],[61.432119,23.750377],[61.432294,23.750259],[61.432481,23.750173],[61.432658,23.750109],[61.432886,23.750071],[61.433072,23.75003],[61.433084,23.75092],[61.433235,23.75088],[61.43334,23.750928],[61.433499,23.750928],[61.433665,23.750912],[61.433808,23.750928],[61.433974,23.751086],[61.434201,23.75118],[61.434354,23.751237],[61.434313,23.751446],[61.434185,23.752116],[61.434218,23.75216],[61.4342,23.752298],[61.433868,23.754041]],
+          routeInfo: {
+            normal: {
+              score: 7.8,
+              duration: "50 min",
+              distance: "3.8 km",
+              text: {
+                fi: "L&auml;hipuistoreitti kulkee pohjoiseen rauhallisempien yhteyksien kautta, mutta matka on selv&auml;sti pidempi.",
+                en: "The park route goes north through calmer connections, but the walk is clearly longer."
+              }
+            }
+          }
+        },
+        {
+          key: "playground",
+          routeName: { fi: "Aukustintie 16 - leikkikentt&auml;", en: "Aukustintie 16 - playground" },
+          destinationName: { fi: "Sipil&auml;n leikkikentt&auml;", en: "Sipil&auml; playground" },
+          destinationCoord: [61.4226673, 23.7410562],
+          destinationIcon: "L",
+          route: [[61.423083,23.733278],[61.423155,23.734041],[61.423265,23.733926],[61.423328,23.733881],[61.42341,23.733878],[61.423541,23.73392],[61.423725,23.734029],[61.423815,23.734124],[61.423933,23.734306],[61.424216,23.734873],[61.424441,23.73515],[61.424768,23.735408],[61.424127,23.737124],[61.423974,23.737557],[61.424017,23.737624],[61.423989,23.737695],[61.423966,23.737703],[61.423943,23.737727],[61.423717,23.738285],[61.42352,23.738827],[61.423458,23.739097],[61.423451,23.739203],[61.423433,23.739313],[61.423417,23.739407],[61.423381,23.739574],[61.42337,23.739724],[61.423365,23.739961],[61.423368,23.740295],[61.42336,23.740484],[61.423345,23.740617],[61.42332,23.740787],[61.423298,23.740908],[61.423274,23.740898],[61.423241,23.740882],[61.423209,23.741083],[61.423031,23.740914],[61.422975,23.740852],[61.422897,23.740802],[61.422872,23.740794],[61.422811,23.740774],[61.422661,23.740798],[61.422661,23.740798]],
+          routeInfo: {
+            normal: {
+              score: 9.1,
+              duration: "10 min",
+              distance: "721 m",
+              text: {
+                fi: "Leikkikentt&auml; on l&auml;hell&auml; kotia, ja reitti pysyy p&auml;&auml;osin pienill&auml; jalankulkuyhteyksill&auml;.",
+                en: "The playground is close to home, and the route mostly stays on small walking connections."
+              }
+            }
+          }
+        },
+        {
+          key: "daycare",
+          routeName: { fi: "Aukustintie 16 - p&auml;iv&auml;koti", en: "Aukustintie 16 - daycare" },
+          destinationName: { fi: "Otsonm&auml;en p&auml;iv&auml;koti", en: "Otsonm&auml;ki daycare" },
+          destinationCoord: [61.415677, 23.7563157],
+          destinationIcon: "D",
+          route: [[61.423083,23.733278],[61.423155,23.734041],[61.423265,23.733926],[61.423328,23.733881],[61.42341,23.733878],[61.423541,23.73392],[61.423725,23.734029],[61.423815,23.734124],[61.423933,23.734306],[61.424216,23.734873],[61.424441,23.73515],[61.424768,23.735408],[61.424127,23.737124],[61.423974,23.737557],[61.424017,23.737624],[61.423989,23.737695],[61.423966,23.737703],[61.423943,23.737727],[61.423717,23.738285],[61.42352,23.738827],[61.423458,23.739097],[61.423451,23.739203],[61.423433,23.739313],[61.423417,23.739407],[61.423381,23.739574],[61.42337,23.739724],[61.423365,23.739961],[61.423368,23.740295],[61.42336,23.740484],[61.423345,23.740617],[61.42332,23.740787],[61.423298,23.740908],[61.423274,23.740898],[61.423241,23.740882],[61.423209,23.741083],[61.423139,23.741507],[61.4231,23.741746],[61.423052,23.741997],[61.423018,23.742134],[61.422969,23.742321],[61.42285,23.742678],[61.422805,23.742745],[61.422758,23.742839],[61.422726,23.742926],[61.422719,23.742991],[61.422695,23.74306],[61.422597,23.743255],[61.42248,23.743431],[61.42233,23.743692],[61.422279,23.743763],[61.422216,23.743813],[61.422142,23.743859],[61.422059,23.743927],[61.42185,23.744064],[61.421752,23.74417],[61.421699,23.744255],[61.421586,23.744512],[61.421325,23.745263],[61.421249,23.745481],[61.421233,23.745535],[61.420936,23.746288],[61.420838,23.746464],[61.4208,23.746515],[61.42076,23.746531],[61.420723,23.746584],[61.420364,23.747119],[61.420251,23.747278],[61.420057,23.747565],[61.419969,23.747715],[61.419786,23.748127],[61.419628,23.74867],[61.419588,23.748786],[61.419533,23.748888],[61.419479,23.748955],[61.419434,23.748984],[61.418502,23.749113],[61.418107,23.749169],[61.418006,23.749188],[61.418008,23.749293],[61.418061,23.751054],[61.418067,23.751226],[61.418128,23.751763],[61.418158,23.752975],[61.418165,23.753145],[61.417985,23.753169],[61.417991,23.753237],[61.417783,23.753391],[61.417713,23.753442],[61.4174,23.753672],[61.417105,23.75389],[61.416628,23.754241],[61.416139,23.754601],[61.41609,23.754676],[61.416058,23.754807],[61.416063,23.754952],[61.416119,23.755464],[61.416254,23.756478],[61.416257,23.756502],[61.41622,23.756528],[61.416016,23.756574],[61.415794,23.756895],[61.415782,23.756854],[61.415745,23.756874]],
+          routeInfo: {
+            normal: {
+              score: 7.6,
+              duration: "26 min",
+              distance: "2 km",
+              text: {
+                fi: "P&auml;iv&auml;kotireitti suuntautuu S&auml;&auml;ksj&auml;rven palvelualueelle ja vaatii huomiota p&auml;&auml;tien l&auml;hell&auml;.",
+                en: "The daycare route heads toward the S&auml;&auml;ksj&auml;rvi service area and needs attention near the main road."
+              }
+            }
+          }
+        }
+      ]
+    });
+
+    const aukustintieSidepathRoute = [[61.423083,23.733278],[61.423155,23.734041],[61.423265,23.733926],[61.423328,23.733881],[61.42341,23.733878],[61.423541,23.73392],[61.423725,23.734029],[61.423815,23.734124],[61.423933,23.734306],[61.424216,23.734873],[61.424441,23.73515],[61.424768,23.735408],[61.424127,23.737124],[61.423974,23.737557],[61.424017,23.737624],[61.423989,23.737695],[61.423966,23.737703],[61.423943,23.737727],[61.423717,23.738285],[61.42352,23.738827],[61.423458,23.739097],[61.423451,23.739203],[61.423433,23.739313],[61.423417,23.739407],[61.423381,23.739574],[61.42337,23.739724],[61.423365,23.739961],[61.423368,23.740295],[61.42336,23.740484],[61.423345,23.740617],[61.42332,23.740787],[61.423298,23.740908],[61.423274,23.740898],[61.423241,23.740882],[61.423209,23.741083],[61.423139,23.741507],[61.4231,23.741746],[61.423052,23.741997],[61.423018,23.742134],[61.422969,23.742321],[61.42285,23.742678],[61.422805,23.742745],[61.422758,23.742839],[61.422726,23.742926],[61.422719,23.742991],[61.422695,23.74306],[61.422597,23.743255],[61.42248,23.743431],[61.42233,23.743692],[61.422279,23.743763],[61.422216,23.743813],[61.422142,23.743859],[61.422059,23.743927],[61.42185,23.744064],[61.421752,23.74417],[61.421699,23.744255],[61.421586,23.744512],[61.421325,23.745263],[61.421249,23.745481],[61.421233,23.745535],[61.420936,23.746288],[61.420838,23.746464],[61.4208,23.746515],[61.42076,23.746531],[61.420723,23.746584],[61.420364,23.747119],[61.420251,23.747278],[61.420057,23.747565],[61.419969,23.747715],[61.419786,23.748127],[61.419628,23.74867],[61.419588,23.748786],[61.419533,23.748888],[61.419479,23.748955],[61.419434,23.748984],[61.418502,23.749113],[61.418107,23.749169],[61.418006,23.749188],[61.418008,23.749293],[61.418061,23.751054],[61.418067,23.751226],[61.418128,23.751763],[61.418158,23.752975],[61.418165,23.753145],[61.418204,23.754044],[61.41827,23.754988],[61.418261,23.755177],[61.418237,23.755336],[61.41816,23.755524],[61.418026,23.755753],[61.417617,23.756288],[61.417322,23.756797],[61.416701,23.757575],[61.416676,23.757583],[61.416654,23.757578],[61.416627,23.757556],[61.416593,23.757516],[61.416532,23.757586],[61.416466,23.757672],[61.416382,23.757854],[61.41611,23.758251],[61.41604,23.758291],[61.415999,23.758273],[61.415927,23.758216],[61.415891,23.758262],[61.415839,23.758341],[61.415808,23.758388],[61.41581,23.758484],[61.415803,23.758581],[61.415786,23.758683],[61.415753,23.758742],[61.415588,23.75898],[61.415265,23.759427],[61.415109,23.759606],[61.414726,23.760028],[61.414609,23.760159],[61.414476,23.760361],[61.414496,23.760474],[61.41453,23.760695],[61.414492,23.760746],[61.414437,23.76081],[61.414175,23.760921],[61.413689,23.76103],[61.413629,23.761039],[61.41364,23.761315],[61.413653,23.761576],[61.413688,23.762281],[61.414223,23.762196]];
+    const aukustintieProperty = properties.find((property) => property.id === "aukustintie");
+    if (aukustintieProperty) {
+      aukustintieProperty.routeGeometry = {
+        normal: aukustintieSidepathRoute,
+        child: aukustintieSidepathRoute
+      };
+      aukustintieProperty.constructionSegments = [
+        {
+          id: "aukustintie-lakeside-roadworks",
+          coords: [[61.423274,23.740898],[61.423241,23.740882],[61.423209,23.741083],[61.423139,23.741507],[61.4231,23.741746],[61.423052,23.741997],[61.423018,23.742134],[61.422969,23.742321],[61.42285,23.742678],[61.422804,23.742745],[61.422758,23.742839],[61.422726,23.742926],[61.422719,23.742991],[61.422695,23.74306],[61.422597,23.743255],[61.42248,23.74343],[61.42233,23.743692],[61.422279,23.743763],[61.422216,23.743813],[61.422142,23.743859],[61.422059,23.743927],[61.42185,23.744063],[61.421752,23.74417],[61.421699,23.744255],[61.421586,23.744512],[61.421325,23.745262]]
+        }
+      ];
+      aukustintieProperty.routes.normal.duration = "33 min";
+      aukustintieProperty.routes.normal.distance = "2.5 km";
+      aukustintieProperty.routes.child.duration = "33 min";
+      aukustintieProperty.routes.child.distance = "2.5 km";
+      aukustintieProperty.precomputedRisks = [
+        {
+          id: "aukustintie-lakeside-roadworks-risk",
+          level: "medium",
+          score: 4,
+          coord: [61.42233, 23.743692],
+          copy: {
+            fi: {
+              title: "Riskikohta #1",
+              description: "Ty&ouml;maa kevyen liikenteen reitill&auml;. Kulku voi olla kapeampi, poikkeava tai lapselle vaikeampi hahmottaa.",
+              speed: "-",
+              lanes: "-",
+              crosswalk: "-",
+              lights: "-",
+              visibility: "Ty&ouml;maa reitill&auml;",
+              recommendation: "Ty&ouml;maa voi muuttaa tuttua kulkureitti&auml;, kaventaa v&auml;yl&auml;&auml; tai ohjata lapsen poikkeusreitille. Arvioitu valmistuminen on elokuussa 2026, joten reitti kannattaa tarkistaa viel&auml; ennen koulun alkua."
+            },
+            en: {
+              title: "Risk point #1",
+              description: "Roadworks on the walking route. The path may be narrower, temporary or harder for a child to read.",
+              speed: "-",
+              lanes: "-",
+              crosswalk: "-",
+              lights: "-",
+              visibility: "Roadworks on route",
+              recommendation: "Roadworks can change a familiar walking route, narrow the path, or send the child onto a temporary detour. Estimated completion is August 2026, so the route should be checked again before school starts."
+            }
+          }
+        },
+        {
+          id: "aukustintie-saaksjarventie-north",
+          level: "medium",
+          score: 4,
+          coord: [61.424768, 23.735408],
+          copy: {
+            fi: {
+              title: "Riskikohta #1",
+              description: "S&auml;&auml;ksj&auml;rventie. Ylityksess&auml; ei ole liikennevaloja tai selke&auml;&auml; suojatiet&auml;, joten pys&auml;htyminen ennen ajorataa on t&auml;rke&auml;&auml;.",
+              speed: "30 km/h",
+              lanes: "2",
+              crosswalk: "Ei",
+              lights: "Ei",
+              visibility: "Isompi tonttikadun ylitys",
+              recommendation: "T&auml;m&auml; ylitys kannattaa harjoitella lapsen kanssa rauhallisena aikana. Pys&auml;hdy ennen ajorataa ja varmista, ett&auml; lapsi hahmottaa molemmat ajosuunnat."
+            },
+            en: {
+              title: "Risk point #1",
+              description: "S&auml;&auml;ksj&auml;rventie. There are no traffic signals or clear marked crossing, so stopping before the roadway matters.",
+              speed: "30 km/h",
+              lanes: "2",
+              crosswalk: "No",
+              lights: "No",
+              visibility: "Larger local-road crossing",
+              recommendation: "Walk this crossing with the child at a calm time. Stop before the roadway and make sure the child understands both traffic directions."
+            }
+          }
+        },
+        {
+          id: "aukustintie-saaksjarventie-middle",
+          level: "medium",
+          score: 4,
+          coord: [61.423274, 23.740898],
+          copy: {
+            fi: {
+              title: "Riskikohta #2",
+              description: "S&auml;&auml;ksj&auml;rventie. Ylityksess&auml; ei ole liikennevaloja tai selke&auml;&auml; suojatiet&auml;, joten lapsen pit&auml;&auml; hahmottaa molemmat ajosuunnat.",
+              speed: "30 km/h",
+              lanes: "2",
+              crosswalk: "Ei",
+              lights: "Ei",
+              visibility: "Isompi paikallistien ylitys",
+              recommendation: "Valitse selke&auml; odotuspaikka ennen ylityst&auml;. Jos n&auml;kyvyys tuntuu huonolta, lyhyt kierto turvallisempaan ylityskohtaan voi olla parempi."
+            },
+            en: {
+              title: "Risk point #2",
+              description: "S&auml;&auml;ksj&auml;rventie. There are no traffic signals or clear marked crossing, so the child needs to understand both traffic directions.",
+              speed: "30 km/h",
+              lanes: "2",
+              crosswalk: "No",
+              lights: "No",
+              visibility: "Larger local-road crossing",
+              recommendation: "Choose a clear waiting point before crossing. If visibility feels poor, a short detour to a clearer crossing can be safer."
+            }
+          }
+        },
+        {
+          id: "aukustintie-kannistontie",
+          level: "low",
+          score: 2,
+          coord: [61.418008, 23.749293],
+          copy: {
+            fi: {
+              title: "Riskikohta #3",
+              description: "Kannistontie. Suojatie auttaa, mutta liikennevaloja ei ole.",
+              speed: "? km/h",
+              lanes: "2",
+              crosswalk: "Kyll&auml;",
+              lights: "Ei",
+              visibility: "Suojatien kohdalla",
+              recommendation: "Suojatie auttaa, mutta valoja ei ole. Lapsen kannattaa oppia odottamaan, kunnes autojen liike on varmasti pys&auml;htynyt tai tie on selke&auml;sti vapaa."
+            },
+            en: {
+              title: "Risk point #3",
+              description: "Kannistontie. The marked crossing helps, but there are no traffic signals.",
+              speed: "? km/h",
+              lanes: "2",
+              crosswalk: "Yes",
+              lights: "No",
+              visibility: "At a marked crossing",
+              recommendation: "The marked crossing helps, but there are no signals. The child should wait until cars have clearly stopped or the road is clearly free."
+            }
+          }
+        },
+        {
+          id: "aukustintie-tampereentie",
+          level: "low",
+          score: 0,
+          coord: [61.414496, 23.760474],
+          copy: {
+            fi: {
+              title: "Riskikohta #4",
+              description: "Tampereentie. T&auml;ss&auml; kannattaa k&auml;ytt&auml;&auml; valollista suojatiet&auml;, vaikka se lis&auml;isi hieman matkaa.",
+              speed: "40 km/h",
+              lanes: "2",
+              crosswalk: "Kyll&auml;",
+              lights: "Kyll&auml;",
+              visibility: "Valollinen suojatie",
+              recommendation: "K&auml;yt&auml; t&auml;ss&auml; aina valollista suojatiet&auml;, vaikka se vaatisi pienen kierron. Se tekee ylityksest&auml; lapselle ennakoitavamman."
+            },
+            en: {
+              title: "Risk point #4",
+              description: "Tampereentie. Use the signalized crossing here, even if it adds a little distance.",
+              speed: "40 km/h",
+              lanes: "2",
+              crosswalk: "Yes",
+              lights: "Yes",
+              visibility: "Signalized crossing",
+              recommendation: "Use the signalized crossing here, even if it adds a short detour. It makes the crossing more predictable for a child."
+            }
+          }
+        }
+      ];
+    }
+
+    const linnainmaaProperty = properties.find((property) => property.id === "linnainmaa");
+    if (linnainmaaProperty) {
+      linnainmaaProperty.precomputedRisks = [
+        {
+          id: "linnainmaa-ylinikkilankuja",
+          level: "medium",
+          score: 3,
+          coord: [61.489045, 23.891577],
+          copy: {
+            fi: {
+              title: "Riskikohta #1",
+              description: "Ylinikkil&auml;nkuja. Ylitys on risteyksen l&auml;hell&auml; eik&auml; siin&auml; ole liikennevaloja.",
+              speed: "30 km/h",
+              lanes: "?",
+              crosswalk: "Kyll&auml;",
+              lights: "Ei",
+              visibility: "Risteyksen l&auml;hell&auml;",
+              recommendation: "T&auml;m&auml; on lyhyen koulumatkan kohta, jossa lapsen pit&auml;&auml; malttaa pys&auml;hty&auml;. K&auml;yk&auml;&auml; yhdess&auml; l&auml;pi, mist&auml; auto voi tulla ja mihin kannattaa katsoa ensin."
+            },
+            en: {
+              title: "Risk point #1",
+              description: "Ylinikkil&auml;nkuja. The crossing is near an intersection and has no traffic signals.",
+              speed: "30 km/h",
+              lanes: "?",
+              crosswalk: "Yes",
+              lights: "No",
+              visibility: "Near intersection",
+              recommendation: "This is a short-route crossing where the child still needs to pause. Walk it together and point out where cars can appear from."
+            }
+          }
+        },
+        {
+          id: "linnainmaa-ylinikkilankatu",
+          level: "medium",
+          score: 3,
+          coord: [61.489781, 23.892147],
+          copy: {
+            fi: {
+              title: "Riskikohta #2",
+              description: "Ylinikkil&auml;nkatu. Suojatie auttaa, mutta risteyksen l&auml;heisyys vaatii rauhallisen pys&auml;htymisen.",
+              speed: "30 km/h",
+              lanes: "?",
+              crosswalk: "Kyll&auml;",
+              lights: "Ei",
+              visibility: "Risteyksen l&auml;hell&auml;",
+              recommendation: "Suojatie auttaa, mutta valoja ei ole. Hyv&auml; nyrkkis&auml;&auml;nt&ouml; lapselle: katso molempiin suuntiin ja l&auml;hde vasta, kun autojen aikeet ovat selv&auml;t."
+            },
+            en: {
+              title: "Risk point #2",
+              description: "Ylinikkil&auml;nkatu. The marked crossing helps, but the nearby intersection makes pausing important.",
+              speed: "30 km/h",
+              lanes: "?",
+              crosswalk: "Yes",
+              lights: "No",
+              visibility: "Near intersection",
+              recommendation: "The marked crossing helps, but there are no signals. A good rule for the child: look both ways and cross only when drivers' intentions are clear."
+            }
+          }
+        },
+        {
+          id: "linnainmaa-helakallionkatu",
+          level: "medium",
+          score: 3,
+          coord: [61.490599, 23.893207],
+          copy: {
+            fi: {
+              title: "Riskikohta #3",
+              description: "Helakallionkatu. Ylitys on l&auml;hell&auml; risteyst&auml;, joten k&auml;&auml;ntyv&auml; liikenne kannattaa huomioida.",
+              speed: "30 km/h",
+              lanes: "?",
+              crosswalk: "Kyll&auml;",
+              lights: "Ei",
+              visibility: "Risteyksen l&auml;hell&auml;",
+              recommendation: "T&auml;m&auml; kohta kannattaa k&auml;vell&auml; lapsen kanssa kouluaamun aikaan. Silloin n&auml;ette, onko liikenne rauhallista vai vaatiiko ylitys enemm&auml;n odottamista."
+            },
+            en: {
+              title: "Risk point #3",
+              description: "Helakallionkatu. The crossing is close to an intersection, so turning traffic is worth watching.",
+              speed: "30 km/h",
+              lanes: "?",
+              crosswalk: "Yes",
+              lights: "No",
+              visibility: "Near intersection",
+              recommendation: "Walk this spot with the child during a school-morning window. That shows whether traffic is calm or whether the crossing needs more waiting."
+            }
+          }
+        }
+      ];
+    }
+
+    const select = document.querySelector("#propertySelect");
+    const pageHeading = document.querySelector("#pageHeading");
+    const scoreBlock = document.querySelector("#scoreBlock");
+    const scoreValue = document.querySelector("#scoreValue");
+    const scoreText = document.querySelector("#scoreText");
+    const duration = document.querySelector("#duration");
+    const distance = document.querySelector("#distance");
+    const riskCount = document.querySelector("#riskCount");
+    const riskSelect = document.querySelector("#riskSelect");
+    const riskList = document.querySelector("#riskList");
+    const normalBtn = document.querySelector("#normalRoute");
+    const childBtn = document.querySelector("#childRoute");
+    const timeInsightTitle = document.querySelector("#timeInsightTitle");
+    const timeInsightText = document.querySelector("#timeInsightText");
+    const mapTitle = document.querySelector("#mapTitle");
+    const riskTitle = document.querySelector("#riskTitle");
+    const riskDescription = document.querySelector("#riskDescription");
+    const speed = document.querySelector("#speed");
+    const lanes = document.querySelector("#lanes");
+    const crosswalk = document.querySelector("#crosswalk");
+    const lights = document.querySelector("#lights");
+    const visibility = document.querySelector("#visibility");
+    const recommendation = document.querySelector("#recommendation");
+
+    let currentLang = "fi";
+    function apartmentSlug(property) {
+      return htmlToText(property.title)
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/&[^;]+;/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+    }
+
+    function propertyFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const apartment = (params.get("asunto") || params.get("apartment") || params.get("route") || "").replace(/[,\s]+$/g, "");
+      if (!apartment) return null;
+      return properties.find((property) => property.id === apartment || apartmentSlug(property) === apartment || property.slug === apartment) || null;
+    }
+
+    function updateRouteUrl(property, replace = false) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("route");
+      url.searchParams.set("asunto", apartmentSlug(property));
+      const method = replace ? "replaceState" : "pushState";
+      window.history[method]({ route: property.id }, "", url);
+    }
+
+    function propertyAddressKey(property) {
+      return htmlToText(property.fullAddress || property.title).toLowerCase();
+    }
+
+    function routeOptionsForSelectedAddress() {
+      const address = propertyAddressKey(selectedProperty);
+      return properties.filter((property) => propertyAddressKey(property) === address);
+    }
+
+    function activeDestinationCoord(property = selectedProperty) {
+      return property.destinationCoord || property.schoolCoord;
+    }
+
+    function activeDestinationName(property = selectedProperty) {
+      return property.destinationName?.[currentLang] || property.copy?.[currentLang]?.school || "";
+    }
+
+    let selectedProperty = propertyFromUrl() || properties.find((property) => property.id === "vuores") || properties[0];
+    let selectedRoute = "normal";
+    let selectedTime = "morning";
+    let selectedRisk = null;
+    let leafletMap;
+    let homeMarker;
+    let schoolMarker;
+    let riskMarkers = [];
+    let routeLines = {};
+    let riskPreviewMap;
+    let riskPreviewRouteLine;
+    let riskPreviewMarker;
+    let riskPreviewConstructionLines = [];
+    let trafficFeatureCache = {};
+    let trafficFeatureStatus = {};
+    const trafficFeatureStoragePrefix = "school-route-traffic-v10";
+    const trafficFeatureStorageTtlMs = 24 * 60 * 60 * 1000;
+
+    function writeHtml(el, value) {
+      el.innerHTML = value;
+    }
+
+    function htmlToText(value) {
+      const el = document.createElement("span");
+      el.innerHTML = value;
+      return el.textContent || "";
+    }
+
+    function selectedRiskCopy() {
+      if (!selectedRisk) return null;
+      return selectedRisk.copy[currentLang];
+    }
+
+    function clampScore(score) {
+      return Math.max(1, Math.min(10, score));
+    }
+
+    function activeTimeProfile() {
+      return timeProfiles[selectedTime];
+    }
+
+    function trafficFeatureKey(property = selectedProperty, routeType = selectedRoute) {
+      const route = property.routeGeometry?.[routeType] || [];
+      const signature = route.map((point) => `${point[0].toFixed(5)},${point[1].toFixed(5)}`).join("|");
+      let hash = 0;
+
+      for (let index = 0; index < signature.length; index += 1) {
+        hash = ((hash << 5) - hash + signature.charCodeAt(index)) | 0;
+      }
+
+      return `${property.id}:${Math.abs(hash).toString(36)}`;
+    }
+
+    function activeRouteRisks() {
+      if (selectedProperty.precomputedRisks) return selectedProperty.precomputedRisks.map((risk, index) => renumberRisk(structuredClone(risk), index));
+      return detectRouteRisks(selectedProperty, selectedRoute, trafficFeatureCache[trafficFeatureKey()] || emptyTrafficFeatures());
+    }
+
+    function emptyTrafficFeatures() {
+      return { roads: [], crosswalks: [], trafficSignals: [] };
+    }
+
+    function trafficFeatureStorageKey(key) {
+      return `${trafficFeatureStoragePrefix}:${key}`;
+    }
+
+    function readStoredTrafficFeatures(key) {
+      if (typeof localStorage === "undefined") return null;
+
+      try {
+        const item = JSON.parse(localStorage.getItem(trafficFeatureStorageKey(key)) || "null");
+        if (!item || Date.now() - item.createdAt > trafficFeatureStorageTtlMs) return null;
+        if (!item.features || !Array.isArray(item.features.roads)) return null;
+        return item.features;
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function writeStoredTrafficFeatures(key, features) {
+      if (typeof localStorage === "undefined") return;
+
+      try {
+        localStorage.setItem(trafficFeatureStorageKey(key), JSON.stringify({
+          createdAt: Date.now(),
+          features
+        }));
+      } catch (error) {
+        // Storage may be unavailable or full; the in-memory cache still keeps this session fast.
+      }
+    }
+
+    function distanceBetweenLatLng(a, b) {
+      const originLat = (a[0] + b[0]) / 2;
+      return distanceBetween(toXY(a, originLat), toXY(b, originLat));
+    }
+
+    function sampledRoutePoints(route, intervalMeters = 70) {
+      const sampled = [];
+      let distanceSinceSample = Infinity;
+
+      for (let index = 0; index < route.length; index += 1) {
+        const point = route[index];
+        if (index === 0 || index === route.length - 1 || distanceSinceSample >= intervalMeters) {
+          sampled.push(point);
+          distanceSinceSample = 0;
+          continue;
+        }
+
+        distanceSinceSample += distanceBetweenLatLng(route[index - 1], point);
+      }
+
+      return sampled;
+    }
+
+    function overpassAroundClauses(route, selector, radiusMeters = 95) {
+      return sampledRoutePoints(route)
+        .map((point) => `${selector}(around:${radiusMeters},${point[0].toFixed(7)},${point[1].toFixed(7)});`)
+        .join("\n");
+    }
+
+    function overpassQueryForRoute(route) {
+      const roadSelector = 'way["highway"~"^(primary|secondary|tertiary|unclassified|residential|living_street)$"]';
+      const crossingNodeSelector = 'node["highway"="crossing"]';
+      const crossingTagSelector = 'node["crossing"]';
+      const signalSelector = 'node["highway"="traffic_signals"]';
+      const crossingWaySelector = 'way["footway"="crossing"]';
+
+      return `
+        [out:json][timeout:10];
+        (
+          ${overpassAroundClauses(route, roadSelector)}
+          ${overpassAroundClauses(route, crossingNodeSelector)}
+          ${overpassAroundClauses(route, crossingTagSelector)}
+          ${overpassAroundClauses(route, signalSelector)}
+          ${overpassAroundClauses(route, crossingWaySelector)}
+        );
+        out tags geom;
+      `;
+    }
+
+    function fetchWithTimeout(url, options, timeoutMs = 12000) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+      return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timeout));
+    }
+
+    async function fetchOverpassFeatures(property, routeType) {
+      const route = property.routeGeometry?.[routeType] || [];
+      const query = overpassQueryForRoute(route);
+      const body = new URLSearchParams({ data: query });
+      const endpoints = [
+        "https://overpass-api.de/api/interpreter",
+        "https://overpass.kumi.systems/api/interpreter"
+      ];
+      let lastError = null;
+
+      for (const endpoint of endpoints) {
+        try {
+          const response = await fetchWithTimeout(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+            body
+          });
+
+          if (!response.ok) throw new Error(`Overpass ${response.status}`);
+          const data = await response.json();
+          return parseOverpassFeatures(data);
+        } catch (error) {
+          lastError = error;
+        }
+      }
+
+      throw lastError || new Error("Overpass query failed");
+    }
+
+    function parseNumberTag(value) {
+      if (!value) return null;
+      const match = String(value).match(/\d+/);
+      return match ? Number(match[0]) : null;
+    }
+
+    function roadName(tags, fallback) {
+      const name = tags["name:fi"] || tags.name || fallback;
+      return { fi: name, en: name };
+    }
+
+    function isMotorRoad(tags) {
+      if (!tags.highway) return false;
+      if (tags.motor_vehicle === "no") return false;
+      if (tags.access === "private") return false;
+      if (tags.highway === "service") return false;
+      return ["primary", "secondary", "tertiary", "unclassified", "residential", "living_street"].includes(tags.highway);
+    }
+
+    function parseOverpassFeatures(data) {
+      const features = emptyTrafficFeatures();
+
+      for (const element of data.elements || []) {
+        const tags = element.tags || {};
+
+        if (element.type === "way" && element.geometry && isMotorRoad(tags)) {
+          features.roads.push({
+            id: `osm-way-${element.id}`,
+            osmId: element.id,
+            name: roadName(tags, tags.highway === "service" ? "Huoltotie" : "Autotie"),
+            speedLimit: parseNumberTag(tags.maxspeed),
+            lanes: parseNumberTag(tags.lanes),
+            width: parseNumberTag(tags.width),
+            highway: tags.highway,
+            line: element.geometry.map((point) => [point.lat, point.lon])
+          });
+        }
+
+        if (element.type === "node" && (tags.highway === "crossing" || tags.crossing)) {
+          features.crosswalks.push({
+            id: `osm-crossing-${element.id}`,
+            osmId: element.id,
+            coord: [element.lat, element.lon]
+          });
+        }
+
+        if (element.type === "node" && (tags.highway === "traffic_signals" || tags.crossing === "traffic_signals")) {
+          features.trafficSignals.push({
+            id: `osm-signal-${element.id}`,
+            osmId: element.id,
+            coord: [element.lat, element.lon]
+          });
+        }
+
+        if (element.type === "way" && element.geometry && tags.footway === "crossing") {
+          const middle = element.geometry[Math.floor(element.geometry.length / 2)];
+          features.crosswalks.push({
+            id: `osm-crossing-way-${element.id}`,
+            osmId: element.id,
+            coord: [middle.lat, middle.lon]
+          });
+          element.geometry.forEach((point, index) => {
+            features.crosswalks.push({
+              id: `osm-crossing-way-${element.id}-${index}`,
+              osmId: element.id,
+              coord: [point.lat, point.lon]
+            });
+          });
+        }
+      }
+
+      return features;
+    }
+
+    function toXY(point, originLat) {
+      const metersPerLat = 110540;
+      const metersPerLng = 111320 * Math.cos(originLat * Math.PI / 180);
+      return { x: point[1] * metersPerLng, y: point[0] * metersPerLat };
+    }
+
+    function fromXY(point, originLat) {
+      const metersPerLat = 110540;
+      const metersPerLng = 111320 * Math.cos(originLat * Math.PI / 180);
+      return [point.y / metersPerLat, point.x / metersPerLng];
+    }
+
+    function pointOnSegment(a, b, t) {
+      return {
+        x: a.x + (b.x - a.x) * t,
+        y: a.y + (b.y - a.y) * t
+      };
+    }
+
+    function distanceBetween(a, b) {
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    }
+
+    function closestPointOnSegment(point, a, b) {
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const lengthSq = dx * dx + dy * dy;
+      if (!lengthSq) return { point: a, t: 0 };
+      const rawT = ((point.x - a.x) * dx + (point.y - a.y) * dy) / lengthSq;
+      const t = Math.max(0, Math.min(1, rawT));
+      return { point: pointOnSegment(a, b, t), t };
+    }
+
+    function distancePointToPolylineMeters(coord, line, originLat) {
+      const point = toXY(coord, originLat);
+      let best = Infinity;
+
+      for (let index = 0; index < line.length - 1; index += 1) {
+        const a = toXY(line[index], originLat);
+        const b = toXY(line[index + 1], originLat);
+        best = Math.min(best, distanceBetween(point, closestPointOnSegment(point, a, b).point));
+      }
+
+      return best;
+    }
+
+    function distanceLineToPolylineMeters(line, route, originLat) {
+      let best = Infinity;
+
+      for (const point of line) {
+        best = Math.min(best, distancePointToPolylineMeters(point, route, originLat));
+      }
+
+      for (const point of route) {
+        best = Math.min(best, distancePointToPolylineMeters(point, line, originLat));
+      }
+
+      return best;
+    }
+
+    function segmentIntersection(a, b, c, d) {
+      const r = { x: b.x - a.x, y: b.y - a.y };
+      const s = { x: d.x - c.x, y: d.y - c.y };
+      const denominator = r.x * s.y - r.y * s.x;
+      if (Math.abs(denominator) < 0.000001) return null;
+
+      const u = ((c.x - a.x) * r.y - (c.y - a.y) * r.x) / denominator;
+      const t = ((c.x - a.x) * s.y - (c.y - a.y) * s.x) / denominator;
+      if (t < -0.02 || t > 1.02 || u < -0.02 || u > 1.02) return null;
+
+      return { point: pointOnSegment(a, b, t), routeT: t, roadT: u };
+    }
+
+    function segmentAngleDegrees(a, b, c, d) {
+      const routeVector = { x: b.x - a.x, y: b.y - a.y };
+      const roadVector = { x: d.x - c.x, y: d.y - c.y };
+      const routeLength = Math.hypot(routeVector.x, routeVector.y);
+      const roadLength = Math.hypot(roadVector.x, roadVector.y);
+      if (!routeLength || !roadLength) return 0;
+
+      const dot = Math.abs(routeVector.x * roadVector.x + routeVector.y * roadVector.y);
+      const cosine = Math.min(1, dot / (routeLength * roadLength));
+      return Math.acos(cosine) * 180 / Math.PI;
+    }
+
+    function isLikelyRoadCrossing(routeA, routeB, roadA, roadB, hit) {
+      const angle = segmentAngleDegrees(routeA, routeB, roadA, roadB);
+      return angle >= 35;
+    }
+
+    function lineRouteCrossings(route, roadLine, originLat) {
+      const crossings = [];
+
+      for (let routeIndex = 0; routeIndex < route.length - 1; routeIndex += 1) {
+        const routeA = toXY(route[routeIndex], originLat);
+        const routeB = toXY(route[routeIndex + 1], originLat);
+
+        for (let roadIndex = 0; roadIndex < roadLine.length - 1; roadIndex += 1) {
+          const roadA = toXY(roadLine[roadIndex], originLat);
+          const roadB = toXY(roadLine[roadIndex + 1], originLat);
+          const hit = segmentIntersection(routeA, routeB, roadA, roadB);
+          if (!hit) continue;
+          if (!isLikelyRoadCrossing(routeA, routeB, roadA, roadB, hit)) continue;
+
+          crossings.push({
+            coord: fromXY(hit.point, originLat),
+            routeIndex,
+            roadIndex,
+            routeT: hit.routeT,
+            roadT: hit.roadT
+          });
+        }
+      }
+
+      return crossings;
+    }
+
+    function buildRoadIntersections(roads) {
+      const intersections = [];
+
+      for (let aIndex = 0; aIndex < roads.length; aIndex += 1) {
+        const roadA = roads[aIndex];
+        const originLat = roadA.line[0]?.[0] || selectedProperty.homeCoord[0];
+
+        for (let bIndex = aIndex + 1; bIndex < roads.length; bIndex += 1) {
+          const roadB = roads[bIndex];
+
+          for (let aSegment = 0; aSegment < roadA.line.length - 1; aSegment += 1) {
+            const a1 = toXY(roadA.line[aSegment], originLat);
+            const a2 = toXY(roadA.line[aSegment + 1], originLat);
+
+            for (let bSegment = 0; bSegment < roadB.line.length - 1; bSegment += 1) {
+              const b1 = toXY(roadB.line[bSegment], originLat);
+              const b2 = toXY(roadB.line[bSegment + 1], originLat);
+              const hit = segmentIntersection(a1, a2, b1, b2);
+              if (!hit) continue;
+
+              intersections.push({
+                id: `intersection-${roadA.id}-${roadB.id}-${aSegment}-${bSegment}`,
+                coord: fromXY(hit.point, originLat)
+              });
+            }
+          }
+        }
+      }
+
+      return dedupeFeaturePoints(intersections, 12);
+    }
+
+    function dedupeFeaturePoints(features, thresholdMeters) {
+      const accepted = [];
+
+      for (const feature of features) {
+        const duplicate = accepted.some((item) => {
+          const originLat = feature.coord[0];
+          return distanceBetween(toXY(feature.coord, originLat), toXY(item.coord, originLat)) < thresholdMeters;
+        });
+        if (!duplicate) accepted.push(feature);
+      }
+
+      return accepted;
+    }
+
+    function nearestFeature(coord, features, originLat, maxDistanceMeters) {
+      let best = null;
+      const point = toXY(coord, originLat);
+
+      for (const feature of features) {
+        const distance = distanceBetween(point, toXY(feature.coord, originLat));
+        if (distance > maxDistanceMeters) continue;
+        if (!best || distance < best.distance) best = { ...feature, distance };
+      }
+
+      return best;
+    }
+
+    function dedupeCrossings(crossings, originLat) {
+      const accepted = [];
+
+      for (const crossing of crossings) {
+        const point = toXY(crossing.coord, originLat);
+        const duplicate = accepted.some((item) => distanceBetween(point, toXY(item.coord, originLat)) < 12);
+        if (!duplicate) accepted.push(crossing);
+      }
+
+      return accepted;
+    }
+
+    function mergeNearbyRisks(risks, originLat) {
+      const merged = [];
+
+      for (const risk of risks) {
+        const point = toXY(risk.coord, originLat);
+        const existing = merged.find((item) => {
+          if (item.roadKey !== risk.roadKey) return false;
+          const threshold = isMajorCrossingRoad(risk.road) ? 90 : 45;
+          return distanceBetween(point, toXY(item.coord, originLat)) < threshold;
+        });
+
+        if (!existing) {
+          merged.push(risk);
+          continue;
+        }
+
+        if (isBetterRepresentativeRisk(risk, existing)) {
+          Object.assign(existing, risk);
+        }
+      }
+
+      return merged.map((risk, index) => renumberRisk(risk, index));
+    }
+
+    function isBetterRepresentativeRisk(candidate, current) {
+      if (candidate.hasSignal !== current.hasSignal) return candidate.hasSignal;
+      if (candidate.hasCrosswalk !== current.hasCrosswalk) return candidate.hasCrosswalk;
+      if (isMajorCrossingRoad(candidate.road)) return candidate.score < current.score;
+      return candidate.score > current.score;
+    }
+
+    function renumberRisk(risk, index) {
+      const number = index + 1;
+      risk.copy.fi.title = `Riskikohta #${number}`;
+      risk.copy.en.title = `Risk point #${number}`;
+      return risk;
+    }
+
+    function riskLevelFromScore(score, road) {
+      if (road.speedLimit !== null && road.speedLimit <= 20) return "low";
+      if (score >= 5) return "high";
+      if (score >= 3) return "medium";
+      return "low";
+    }
+
+    function isMajorCrossingRoad(road) {
+      return ["primary", "secondary", "tertiary", "unclassified"].includes(road.highway);
+    }
+
+    function isSignificantRisk(risk) {
+      if (isMajorCrossingRoad(risk.road)) return true;
+      if (selectedProperty.id === "aukustintie" && risk.road.highway === "residential" && risk.road.width !== null && risk.road.width <= 4) return false;
+      return risk.score >= 1;
+    }
+
+    function calculateRiskScore(road, linkedFeatures) {
+      let score = 0;
+      const reasons = [];
+
+      if (road.speedLimit >= 50) {
+        score += 3;
+        reasons.push({ fi: "nopeusrajoitus on v&auml;hint&auml;&auml;n 50 km/h", en: "the speed limit is at least 50 km/h" });
+      }
+
+      if (!linkedFeatures.signal) {
+        score += 2;
+        reasons.push({ fi: "ylityksess&auml; ei ole liikennevaloja", en: "there are no traffic signals" });
+      }
+
+      if (!linkedFeatures.crosswalk) {
+        score += 2;
+        reasons.push({ fi: "selke&auml;&auml; suojatiet&auml; ei n&auml;y", en: "there is no clear marked crossing" });
+      }
+
+      if ((road.lanes || 0) > 2) {
+        score += 1;
+        reasons.push({ fi: "tiell&auml; on yli kaksi kaistaa", en: "the road has more than two lanes" });
+      }
+
+      if (linkedFeatures.intersection) {
+        score += 1;
+        reasons.push({ fi: "ylitys on risteyksen l&auml;hell&auml;", en: "the crossing is near an intersection" });
+      }
+
+      return { score, reasons };
+    }
+
+    function detectRouteRisks(property, routeType, trafficFeatures) {
+      const route = property.routeGeometry?.[routeType] || [];
+      const data = trafficFeatures || emptyTrafficFeatures();
+      const originLat = property.homeCoord[0];
+      const bufferMeters = 20;
+      const roads = (data.roads || []).filter((road) => distanceLineToPolylineMeters(road.line, route, originLat) <= bufferMeters);
+      const crosswalks = (data.crosswalks || []).filter((feature) => distancePointToPolylineMeters(feature.coord, route, originLat) <= bufferMeters);
+      const signals = (data.trafficSignals || []).filter((feature) => distancePointToPolylineMeters(feature.coord, route, originLat) <= bufferMeters);
+      const intersections = buildRoadIntersections(roads).filter((feature) => distancePointToPolylineMeters(feature.coord, route, originLat) <= bufferMeters);
+      const risks = [];
+
+      for (const road of roads) {
+        for (const crossing of dedupeCrossings(lineRouteCrossings(route, road.line, originLat), originLat)) {
+          if (isSchoolYardApproach(crossing, road, route, activeDestinationCoord(property), originLat)) continue;
+
+          const linkedFeatures = {
+            crosswalk: nearestFeature(crossing.coord, crosswalks, originLat, 60),
+            signal: nearestFeature(crossing.coord, signals, originLat, isMajorCrossingRoad(road) ? 70 : 18),
+            intersection: nearestFeature(crossing.coord, intersections, originLat, 18)
+          };
+          const risk = calculateRiskScore(road, linkedFeatures);
+          if (risk.score === 0 && !isMajorCrossingRoad(road)) continue;
+
+          risks.push(createRouteRisk(property, routeType, road, crossing, linkedFeatures, risk, risks.length));
+        }
+      }
+
+      return mergeNearbyRisks(risks.filter(isSignificantRisk), originLat);
+    }
+
+    function isSchoolYardApproach(crossing, road, route, schoolCoord, originLat) {
+      const progress = crossing.routeIndex / Math.max(1, route.length - 1);
+      const distanceToSchool = distanceBetween(toXY(crossing.coord, originLat), toXY(schoolCoord, originLat));
+      const isMinorRoad = ["residential", "living_street"].includes(road.highway);
+      return progress > 0.78 && distanceToSchool < 140 && isMinorRoad;
+    }
+
+    async function ensureTrafficFeaturesLoaded() {
+      const property = selectedProperty;
+      const routeType = selectedRoute;
+      if (property.precomputedRisks) {
+        trafficFeatureStatus[trafficFeatureKey(property, routeType)] = "loaded";
+        selectedRisk = activeRouteRisks()[0] || null;
+        renderRoute();
+        renderRisks();
+        renderRiskDetails();
+        renderLeafletRoutes();
+        renderLeafletRisks();
+        return;
+      }
+      const key = trafficFeatureKey(property, routeType);
+      if (trafficFeatureCache[key] || trafficFeatureStatus[key] === "loading") return;
+
+      const storedFeatures = readStoredTrafficFeatures(key);
+      if (storedFeatures) {
+        trafficFeatureCache[key] = storedFeatures;
+        trafficFeatureStatus[key] = "loaded";
+        selectedRisk = activeRouteRisks()[0] || null;
+        renderRoute();
+        renderRisks();
+        renderRiskDetails();
+        renderLeafletRoutes();
+        renderLeafletRisks();
+        return;
+      }
+
+      trafficFeatureStatus[key] = "loading";
+      renderRisks();
+      renderRiskDetails();
+
+      try {
+        const features = await fetchOverpassFeatures(property, routeType);
+        trafficFeatureCache[key] = features;
+        writeStoredTrafficFeatures(key, features);
+        trafficFeatureStatus[key] = "loaded";
+      } catch (error) {
+        console.warn("OSM traffic feature loading failed", error);
+        trafficFeatureCache[key] = emptyTrafficFeatures();
+        trafficFeatureStatus[key] = "error";
+      }
+
+      if (selectedProperty !== property || selectedRoute !== routeType) return;
+
+      selectedRisk = activeRouteRisks()[0] || null;
+      renderRoute();
+      renderRisks();
+      renderRiskDetails();
+      renderLeafletRoutes();
+      renderLeafletRisks();
+    }
+
+    function yesNo(value, lang) {
+      if (lang === "fi") return value ? "Kyll&auml;" : "Ei";
+      return value ? "Yes" : "No";
+    }
+
+    function createRouteRisk(property, routeType, road, crossing, linkedFeatures, risk, index) {
+      const level = riskLevelFromScore(risk.score, road);
+      const titleNumber = index + 1;
+      const fiReasons = risk.reasons.length ? `Huomioitavaa:<br>${risk.reasons.map((reason) => `- ${reason.fi}`).join("<br>")}` : "Ylitys vaikuttaa tavanomaiselta, mutta se kannattaa silti n&auml;ytt&auml;&auml; lapselle.";
+      const enReasons = risk.reasons.length ? `Worth noting:<br>${risk.reasons.map((reason) => `- ${reason.en}`).join("<br>")}` : "The crossing looks ordinary, but it is still worth showing to the child.";
+      const hasCrosswalk = Boolean(linkedFeatures.crosswalk);
+      const hasSignal = Boolean(linkedFeatures.signal);
+      const nearIntersection = Boolean(linkedFeatures.intersection);
+
+      return {
+        id: `${property.id}-${routeType}-${road.id}-${crossing.routeIndex}-${crossing.roadIndex}`,
+        road,
+        roadId: road.id,
+        roadKey: road.name.fi.toLowerCase(),
+        hasCrosswalk,
+        hasSignal,
+        nearIntersection,
+        level,
+        score: risk.score,
+        coord: crossing.coord,
+        copy: {
+          fi: {
+            title: `Riskikohta #${titleNumber}`,
+            description: `${road.name.fi}. ${fiReasons}`,
+            speed: `${road.speedLimit || "?"} km/h`,
+            lanes: `${road.lanes || "?"}`,
+            crosswalk: yesNo(hasCrosswalk, "fi"),
+            lights: yesNo(hasSignal, "fi"),
+            visibility: nearIntersection ? "Risteyksen l&auml;hell&auml;" : "Ei risteyst&auml; l&auml;hell&auml;",
+            recommendation: "K&auml;yk&auml;&auml; t&auml;m&auml; kohta l&auml;pi lapsen kanssa ennen kuin reitist&auml; tulee itsen&auml;inen koulumatka. Harjoitelkaa, miss&auml; pys&auml;hdyt&auml;&auml;n ja mist&auml; suunnista autot voivat tulla."
+          },
+          en: {
+            title: `Risk point #${titleNumber}`,
+            description: `${road.name.en}. ${enReasons}`,
+            speed: `${road.speedLimit || "?"} km/h`,
+            lanes: `${road.lanes || "?"}`,
+            crosswalk: yesNo(hasCrosswalk, "en"),
+            lights: yesNo(hasSignal, "en"),
+            visibility: nearIntersection ? "Near intersection" : "No nearby intersection",
+            recommendation: "Walk this spot with the child before the route becomes an independent school trip. Practice where to stop and which directions cars can come from."
+          }
+        }
+      };
+    }
+
+    function makeMarkerIcon(type, label, extraClass = "") {
+      return L.divIcon({
+        className: "",
+        html: `<div class="map-marker ${type} ${extraClass}">${label}</div>`,
+        iconSize: [34, 34],
+        iconAnchor: [17, 17]
+      });
+    }
+
+    function ensureLeafletMap() {
+      if (!window.L) {
+        writeHtml(mapTitle, "Karttakirjasto ei latautunut");
+        return false;
+      }
+
+      if (!leafletMap) {
+        const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+          attribution: "&copy; OpenStreetMap"
+        });
+        const satellite = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+          maxZoom: 19,
+          attribution: "Tiles &copy; Esri"
+        });
+
+        leafletMap = L.map("leafletMap", {
+          layers: [osm],
+          zoomControl: true
+        }).setView(selectedProperty.homeCoord, 15);
+
+        L.control.layers({
+          "Peruskartta": osm,
+          "Satelliitti": satellite
+        }, null, { position: "topright" }).addTo(leafletMap);
+      }
+
+      return true;
+    }
+
+    function routeStyle(type) {
+      return {
+        color: type === "normal" ? "#159957" : "#2563eb",
+        weight: 7,
+        opacity: 0.95,
+        dashArray: type === "child" ? "12 10" : null
+      };
+    }
+
+    function constructionStyle() {
+      return {
+        color: "#f59e0b",
+        weight: 9,
+        opacity: 0.96,
+        dashArray: "14 8"
+      };
+    }
+
+    function riskColor(level) {
+      if (level === "high") return "#dc2626";
+      if (level === "medium") return "#f59e0b";
+      return "#159957";
+    }
+
+    function clearLayer(layer) {
+      if (layer && leafletMap) leafletMap.removeLayer(layer);
+    }
+
+    function clearPreviewLayer(layer) {
+      if (layer && riskPreviewMap) riskPreviewMap.removeLayer(layer);
+    }
+
+    function ensureRiskPreviewMap() {
+      if (!window.L || riskPreviewMap) return Boolean(riskPreviewMap);
+
+      riskPreviewMap = L.map("riskPreviewMap", {
+        attributionControl: true,
+        dragging: false,
+        scrollWheelZoom: false,
+        doubleClickZoom: false,
+        boxZoom: false,
+        keyboard: false,
+        zoomControl: false,
+        tap: false
+      });
+
+      L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+        maxZoom: 19,
+        attribution: "Tiles &copy; Esri"
+      }).addTo(riskPreviewMap);
+
+      return true;
+    }
+
+    function renderRiskPreviewMap() {
+      if (!ensureRiskPreviewMap()) return;
+
+      clearPreviewLayer(riskPreviewRouteLine);
+      clearPreviewLayer(riskPreviewMarker);
+      riskPreviewConstructionLines.forEach(clearPreviewLayer);
+      riskPreviewRouteLine = null;
+      riskPreviewMarker = null;
+      riskPreviewConstructionLines = [];
+
+      const center = selectedRisk?.coord || selectedProperty.homeCoord;
+      riskPreviewMap.setView(center, selectedRisk ? 19 : 16);
+
+      if (selectedRisk) {
+        riskPreviewRouteLine = L.polyline(routeFallbackCoords(selectedRoute), {
+          ...routeStyle(selectedRoute),
+          weight: 4,
+          opacity: 0.72
+        }).addTo(riskPreviewMap);
+
+        riskPreviewConstructionLines = (selectedProperty.constructionSegments || []).map((segment) => (
+          L.polyline(segment.coords, {
+            ...constructionStyle(),
+            weight: 5,
+            opacity: 0.88
+          }).addTo(riskPreviewMap)
+        ));
+
+        riskPreviewMarker = L.circleMarker(selectedRisk.coord, {
+          radius: 8,
+          color: "#ffffff",
+          weight: 3,
+          fillColor: riskColor(selectedRisk.level),
+          fillOpacity: 0.92,
+          opacity: 1,
+          interactive: false
+        }).addTo(riskPreviewMap);
+      }
+
+      setTimeout(() => riskPreviewMap?.invalidateSize(), 0);
+    }
+
+    function renderLeafletRiskActive() {
+      if (!selectedRisk) return;
+      for (const item of riskMarkers) {
+        if (item.marker.setStyle) {
+          item.marker.setStyle({
+            radius: item.risk.id === selectedRisk.id ? 13 : 10,
+            weight: item.risk.id === selectedRisk.id ? 5 : 4
+          });
+        } else if (item.marker.getElement) {
+          const el = item.marker.getElement();
+          const marker = el.querySelector(".map-marker");
+          if (marker) marker.classList.toggle("active", item.risk.id === selectedRisk.id);
+        }
+      }
+    }
+
+    function renderLeafletRisks() {
+      if (!leafletMap) return;
+      for (const item of riskMarkers) clearLayer(item.marker);
+      riskMarkers = [];
+
+      for (const risk of activeRouteRisks()) {
+        const copy = risk.copy[currentLang];
+        const marker = L.circleMarker(risk.coord, {
+          pane: "markerPane",
+          radius: selectedRisk?.id === risk.id ? 13 : 10,
+          color: "#ffffff",
+          weight: selectedRisk?.id === risk.id ? 5 : 4,
+          fillColor: riskColor(risk.level),
+          fillOpacity: 1,
+          opacity: 1,
+          bubblingMouseEvents: false
+        }).addTo(leafletMap);
+        marker.bindTooltip(copy.title, { direction: "top", offset: [0, -12] });
+        marker.on("click", () => {
+          selectedRisk = risk;
+          renderRisks();
+          renderRiskDetails();
+          renderLeafletRiskActive();
+        });
+        riskMarkers.push({ marker, risk });
+      }
+
+      renderLeafletRiskActive();
+    }
+    function routeFallbackCoords(type) {
+      return selectedProperty.routeGeometry[type];
+    }
+
+    function renderLeafletRoutes() {
+      if (!leafletMap) return;
+
+      for (const key of Object.keys(routeLines)) clearLayer(routeLines[key]);
+      routeLines = {};
+
+      for (const type of [selectedRoute]) {
+        routeLines[type] = L.polyline(routeFallbackCoords(type), routeStyle(type)).addTo(leafletMap);
+      }
+
+      (selectedProperty.constructionSegments || []).forEach((segment, index) => {
+        routeLines[`construction-${index}`] = L.polyline(segment.coords, constructionStyle()).addTo(leafletMap);
+      });
+    }
+
+    function renderLeafletMap() {
+      if (!ensureLeafletMap()) return;
+
+      clearLayer(homeMarker);
+      clearLayer(schoolMarker);
+
+      homeMarker = L.marker(selectedProperty.homeCoord, {
+        icon: makeMarkerIcon("home", "H")
+      }).addTo(leafletMap);
+      schoolMarker = L.marker(activeDestinationCoord(), {
+        icon: makeMarkerIcon("destination", selectedProperty.destinationIcon || "S")
+      }).addTo(leafletMap);
+
+      homeMarker.bindTooltip(htmlToText(selectedProperty.fullAddress || selectedProperty.title), { direction: "top", offset: [0, -14] });
+      schoolMarker.bindTooltip(activeDestinationName(), { direction: "top", offset: [0, -14] });
+
+      renderLeafletRoutes();
+      renderLeafletRisks();
+
+      const bounds = L.latLngBounds([
+        selectedProperty.homeCoord,
+        activeDestinationCoord(),
+        ...activeRouteRisks().map((risk) => risk.coord),
+        ...selectedProperty.routeGeometry.normal,
+        ...selectedProperty.routeGeometry.child
+      ]);
+      leafletMap.fitBounds(bounds.pad(0.22));
+      setTimeout(() => leafletMap.invalidateSize(), 0);
+    }
+
+    function renderStaticText() {
+      document.documentElement.lang = currentLang;
+      document.title = htmlToText(selectedProperty?.fullAddress || selectedProperty?.title || ui[currentLang].pageTitle);
+      writeHtml(pageHeading, selectedProperty?.fullAddress || selectedProperty?.title || ui[currentLang].pageTitle);
+
+      document.querySelectorAll("[data-i18n]").forEach((el) => {
+        writeHtml(el, ui[currentLang][el.dataset.i18n]);
+      });
+
+      document.querySelectorAll("[data-lang]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.lang === currentLang);
+      });
+
+      document.querySelectorAll("[data-time]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.time === selectedTime);
+      });
+    }
+
+    function renderOptions() {
+      const selectedId = selectedProperty.id;
+      select.innerHTML = "";
+
+      for (const property of routeOptionsForSelectedAddress()) {
+        const option = document.createElement("option");
+        option.value = property.id;
+        option.innerHTML = property.routeName?.[currentLang] || property.title;
+        select.appendChild(option);
+      }
+
+      select.value = selectedId;
+    }
+
+    function renderRiskDetails() {
+      const copy = selectedRiskCopy();
+      if (!copy) {
+        const status = trafficFeatureStatus[trafficFeatureKey()];
+        const isLoading = status === "loading";
+        const isError = status === "error";
+        writeHtml(riskTitle, isLoading ? (currentLang === "fi" ? "Tarkistetaan reitin huomioita" : "Checking route notes") : (currentLang === "fi" ? "Ei erityisi&auml; huomioita" : "No special notes"));
+        writeHtml(riskDescription, isLoading ? (currentLang === "fi" ? "Kartta tarkistaa koulumatkan ylityksi&auml;, ty&ouml;maita ja muita kohtia, jotka kannattaa huomata arjessa." : "The map is checking crossings, roadworks and other everyday route notes.") : isError ? (currentLang === "fi" ? "Reitin huomioita ei saatu ladattua juuri nyt. Kokeile p&auml;ivitt&auml;&auml; sivu hetken kuluttua." : "Route notes could not be loaded right now. Try refreshing the page in a moment.") : (currentLang === "fi" ? "T&auml;ll&auml; reitill&auml; ei n&auml;y erityisi&auml; kohtia, jotka vaatisivat erillist&auml; huomiota." : "This route does not show any special points that need extra attention."));
+        writeHtml(speed, "-");
+        writeHtml(lanes, "-");
+        writeHtml(crosswalk, "-");
+        writeHtml(lights, "-");
+        writeHtml(visibility, "-");
+        writeHtml(recommendation, currentLang === "fi" ? "K&auml;vele reitti kerran lapsen kanssa ja tarkista, tuntuuko se rauhalliselta my&ouml;s kouluaamun aikaan." : "Walk the route once with the child and check whether it still feels calm during a school-morning window.");
+        renderRiskPreviewMap();
+        return;
+      }
+      writeHtml(riskTitle, copy.title);
+      writeHtml(riskDescription, copy.description);
+      writeHtml(speed, copy.speed);
+      writeHtml(lanes, copy.lanes);
+      writeHtml(crosswalk, copy.crosswalk);
+      writeHtml(lights, copy.lights);
+      writeHtml(visibility, copy.visibility);
+      writeHtml(recommendation, copy.recommendation);
+
+      document.querySelectorAll("[data-risk-id]").forEach((el) => {
+        el.classList.toggle("active", el.dataset.riskId === selectedRisk.id);
+      });
+      renderLeafletRiskActive();
+      renderRiskPreviewMap();
+    }
+
+    function renderRisks() {
+      riskList.innerHTML = "";
+      riskSelect.innerHTML = "";
+      const risks = activeRouteRisks();
+
+      if (!selectedRisk || !risks.some((risk) => risk.id === selectedRisk.id)) {
+        selectedRisk = risks[0] || null;
+      }
+
+      if (!selectedRisk) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = trafficFeatureStatus[trafficFeatureKey()] === "loading" ? (currentLang === "fi" ? "Tarkistetaan reitin huomioita..." : "Checking route notes...") : (currentLang === "fi" ? "Ei erityisi&auml; huomioita" : "No special notes");
+        riskSelect.appendChild(option);
+        riskSelect.value = "";
+        riskSelect.disabled = true;
+        return;
+      }
+
+      riskSelect.disabled = false;
+
+      for (const risk of risks) {
+        const copy = risk.copy[currentLang];
+        const option = document.createElement("option");
+        option.value = risk.id;
+        option.textContent = `${htmlToText(copy.title)} - ${htmlToText(copy.description)}`;
+        riskSelect.appendChild(option);
+      }
+
+      riskSelect.value = selectedRisk.id;
+
+      const copy = selectedRisk.copy[currentLang];
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "risk-card active";
+      card.dataset.riskId = selectedRisk.id;
+      card.innerHTML = `
+        <div class="risk-top">
+          <strong>${copy.title}</strong>
+          <span class="badge ${selectedRisk.level}">${ui[currentLang][selectedRisk.level]}</span>
+        </div>
+        <p class="subtle">${copy.description}</p>
+        <p class="traffic-line"><strong>${ui[currentLang].trafficRisk}: ${activeTimeProfile().trafficLevel[currentLang]}.</strong> ${activeTimeProfile().riskText[selectedRisk.level][currentLang]}</p>
+      `;
+      riskList.appendChild(card);
+    }
+    function renderRoute() {
+      const route = selectedProperty.routes[selectedRoute];
+      const timeAdjustedScore = clampScore(route.score + activeTimeProfile().scoreDelta[selectedRoute]);
+      scoreValue.textContent = timeAdjustedScore.toFixed(1);
+      scoreBlock.style.setProperty("--score", timeAdjustedScore);
+      writeHtml(scoreText, route.text[currentLang]);
+      duration.textContent = route.duration;
+      distance.textContent = route.distance;
+      riskCount.textContent = `${activeRouteRisks().length}`;
+      writeHtml(mapTitle, selectedRoute === "normal" ? ui[currentLang].mapNormal : ui[currentLang].mapChild);
+      writeHtml(timeInsightTitle, `${activeTimeProfile().insightTitle[currentLang]} · ${ui[currentLang].recommendedPrefix}: ${selectedRoute === activeTimeProfile().recommendedRoute ? (selectedRoute === "normal" ? ui[currentLang].recommendedNormal : ui[currentLang].recommendedChild) : (activeTimeProfile().recommendedRoute === "normal" ? ui[currentLang].recommendedNormal : ui[currentLang].recommendedChild)}`);
+      writeHtml(timeInsightText, activeTimeProfile().insightText[currentLang]);
+
+      if (routeLines.normal) routeLines.normal.setStyle(routeStyle("normal"));
+      if (routeLines.child) routeLines.child.setStyle(routeStyle("child"));
+      normalBtn.classList.toggle("active", selectedRoute === "normal");
+      childBtn.classList.toggle("active", selectedRoute === "child");
+    }
+
+    function renderProperty() {
+      document.title = htmlToText(selectedProperty.fullAddress || selectedProperty.title);
+      writeHtml(pageHeading, selectedProperty.fullAddress || selectedProperty.title);
+      selectedRisk = activeRouteRisks().find((risk) => risk.id === selectedRisk?.id) || activeRouteRisks()[0];
+      renderRoute();
+      renderRisks();
+      renderRiskDetails();
+      renderLeafletMap();
+      ensureTrafficFeaturesLoaded();
+    }
+
+    function renderAll() {
+      renderStaticText();
+      renderOptions();
+      renderProperty();
+    }
+
+    select.addEventListener("change", (event) => {
+      selectedProperty = properties.find((property) => property.id === event.target.value);
+      selectedRoute = activeTimeProfile().recommendedRoute;
+      selectedRisk = activeRouteRisks()[0];
+      updateRouteUrl(selectedProperty);
+      renderProperty();
+    });
+
+    normalBtn.addEventListener("click", () => {
+      selectedRoute = "normal";
+      renderRoute();
+      selectedRisk = activeRouteRisks()[0];
+      renderRisks();
+      renderRiskDetails();
+      renderLeafletRoutes();
+      renderLeafletRisks();
+      ensureTrafficFeaturesLoaded();
+    });
+
+    childBtn.addEventListener("click", () => {
+      selectedRoute = "child";
+      selectedRisk = activeRouteRisks()[0];
+      renderRoute();
+      renderRisks();
+      renderRiskDetails();
+      renderLeafletRoutes();
+      renderLeafletRisks();
+      ensureTrafficFeaturesLoaded();
+    });
+
+    riskSelect.addEventListener("change", (event) => {
+      selectedRisk = activeRouteRisks().find((risk) => risk.id === event.target.value) || activeRouteRisks()[0];
+      renderRisks();
+      renderRiskDetails();
+    });
+
+    document.querySelectorAll("[data-time]").forEach((button) => {
+      button.addEventListener("click", () => {
+        selectedTime = button.dataset.time;
+        selectedRoute = activeTimeProfile().recommendedRoute;
+        renderAll();
+      });
+    });
+
+    document.querySelectorAll("[data-lang]").forEach((button) => {
+      button.addEventListener("click", () => {
+        currentLang = button.dataset.lang;
+        renderAll();
+      });
+    });
+
+    window.addEventListener("popstate", () => {
+      selectedProperty = propertyFromUrl() || selectedProperty;
+      selectedRoute = activeTimeProfile().recommendedRoute;
+      selectedRisk = activeRouteRisks()[0];
+      renderAll();
+    });
+
+    selectedRoute = "normal";
+    updateRouteUrl(selectedProperty, true);
+    renderAll();
+  </script>
+</body>
+</html>

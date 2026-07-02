@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HomeExplorer</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="css/style.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  </head>
+  <body>
+    <header class="navbar">
+      <div class="logo">
+        <span class="brand-home">Home</span
+        ><span class="brand-explorer">Explorer</span>
+      </div>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="ar.html">AR Scan</a>
+        <a href="properties.html">Properties</a>
+        <a href="map.html">Map</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <h1>Explore Tampere through your family’s eyes</h1>
+      <p>
+        Understand safety, schools, roads, parks, services, and community
+        feeling before choosing a home.
+      </p>
+
+      <div class="search-box">
+        <select id="homeType">
+          <optgroup label="For sale">
+            <option value="apartments-sale">Apartments for sale</option>
+            <option value="new-homes-sale">New homes for sale</option>
+            <option value="holiday-homes-sale">Holiday homes for sale</option>
+          </optgroup>
+
+          <optgroup label="For rent">
+            <option value="apartments-rent">Apartments for rent</option>
+            <option value="holiday-homes-rent">Holiday homes for rent</option>
+          </optgroup>
+        </select>
+
+        <div class="search-input-wrapper">
+          <input
+            type="search"
+            id="locationInput"
+            name="homeexplorer-location-search"
+            placeholder="Tampere area or postal code"
+            oninput="showSuggestions()"
+            autocomplete="off"
+            autocorrect="off"
+            spellcheck="false"
+          />
+        </div>
+
+        <button onclick="searchLocation()">Search</button>
+        <button onclick="showOnMap()">Show on Map</button>
+      </div>
+
+      <button class="map-btn" onclick="goToAR()">Start AR Scan</button>
+    </section>
+
+    <section class="recommendation-section">
+      <h2>Find the best neighbourhood for your family</h2>
+      <p>
+        Select your family preferences to discover areas that match your needs.
+      </p>
+
+      <div class="preference-box">
+        <label
+          ><input type="checkbox" value="quiet" class="pref" /> Quiet
+          area</label
+        >
+        <label
+          ><input type="checkbox" value="school" class="pref" /> Nearby
+          schools</label
+        >
+        <label
+          ><input type="checkbox" value="tram" class="pref" /> Near tram
+          stop</label
+        >
+        <label
+          ><input type="checkbox" value="bright" class="pref" /> Bright
+          homes</label
+        >
+        <label
+          ><input type="checkbox" value="new" class="pref" /> New
+          buildings</label
+        >
+        <label
+          ><input type="checkbox" value="parks" class="pref" /> Parks &
+          playgrounds</label
+        >
+        <label
+          ><input type="checkbox" value="safe" class="pref" /> High
+          safety</label
+        >
+      </div>
+
+      <textarea
+        id="userPreferences"
+        placeholder="Example: I want a quiet area near school and tram stop with good parks for children."
+      ></textarea>
+
+      <button class="recommend-btn" onclick="recommendProperty()">
+        Get Recommendations
+      </button>
+
+      <div id="recommendationResult" class="recommendation-result"></div>
+    </section>
+
+    <script src="js/main.js"></script>
+    <script src="js/tampere-data.js"></script>
+    <script>
+      function searchLocation() {
+        const location = document.getElementById("locationInput").value.trim();
+        if (!location) {
+          alert("Please enter an area or postal code");
+          return;
+        }
+        // Store the search query in session storage and navigate to properties
+        sessionStorage.setItem("searchQuery", location);
+        window.location.href =
+          "properties.html?search=" + encodeURIComponent(location);
+      }
+
+      function showOnMap() {
+        const location = document.getElementById("locationInput").value.trim();
+        if (!location) {
+          alert("Please enter an area or postal code");
+          return;
+        }
+        // Store the search query and navigate to map
+        sessionStorage.setItem("searchQuery", location);
+        window.location.href = "map.html";
+      }
+
+      function recommendAreas() {
+        const preferences = Array.from(
+          document.querySelectorAll(".pref:checked"),
+        ).map((el) => el.value);
+        const userText = document
+          .getElementById("userPreferences")
+          .value.toLowerCase();
+        const resultDiv = document.getElementById("recommendationResult");
+
+        if (preferences.length === 0 && userText === "") {
+          resultDiv.innerHTML =
+            '<p class="info-text">Select preferences or describe your needs to get recommendations.</p>';
+          return;
+        }
+
+        // Get recommendations using real Tampere data
+        const allRecommendations = getRecommendedAreas(preferences, userText);
+        const top = allRecommendations.slice(0, 2);
+
+        if (top[0].matchScore === 0) {
+          resultDiv.innerHTML =
+            '<p class="info-text">No strong matches found. Visit the AR Scanner to explore all areas.</p>';
+          return;
+        }
+
+        let html = "<h3>📍 Recommended Areas for Your Family:</h3>";
+        top.forEach((area) => {
+          const matchPercent = Math.round((area.matchScore / 10) * 100);
+          const postalCode =
+            postalCodeMap[area.name.toLowerCase()] || area.postalCode;
+
+          html += `
+            <div class="recommendation-card">
+              <h4>${area.name}</h4>
+              <p class="postal-code">📍 ${postalCode}</p>
+              <div class="match-bar">
+                <div class="match-fill" style="width: ${matchPercent}%"></div>
+              </div>
+              <p class="match-text">${matchPercent}% match for your preferences</p>
+              
+              <div class="recommendation-details">
+                <div class="detail-row">
+                  <span class="detail-label">Family Score:</span>
+                  <span class="detail-value">${area.familyScore}/100</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Safety:</span>
+                  <span class="detail-value">${area.safety}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Schools:</span>
+                  <span class="detail-value">${area.education.schools}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Playgrounds:</span>
+                  <span class="detail-value">${area.recreation.playgrounds}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Families in Area:</span>
+                  <span class="detail-value">${area.demographics.families}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Traffic:</span>
+                  <span class="detail-value">${area.traffic}</span>
+                </div>
+              </div>
+              
+              <div class="recommendation-actions">
+                <button class="btn-scan" onclick="window.location.href='ar.html?area=${postalCode}'">📱 Detailed Scan</button>
+                <button class="btn-view" onclick="window.location.href='map.html'">🗺️ View on Map</button>
+              </div>
+            </div>
+          `;
+        });
+
+        resultDiv.innerHTML = html;
+        resultDiv.scrollIntoView({ behavior: "smooth" });
+      }
+    </script>
+  </body>
+</html>

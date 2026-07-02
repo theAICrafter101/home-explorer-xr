@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HomeExplorer | Map</title>
+
+    <link rel="stylesheet" href="css/style.css" />
+
+    <!-- Leaflet Map CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  </head>
+
+  <body>
+    <header class="navbar">
+      <div class="logo">
+        <span class="brand-home">Home</span
+        ><span class="brand-explorer">Explorer</span>
+      </div>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="ar.html">AR Scan</a>
+        <a href="properties.html">Properties</a>
+        <a href="map.html">Map</a>
+      </nav>
+    </header>
+
+    <section class="map-page-header">
+      <h1>Explore Tampere Neighbourhood Map</h1>
+      <p>
+        Move, zoom, and click an area to see family and development information.
+      </p>
+    </section>
+
+    <div id="fullMap"></div>
+
+    <!-- Leaflet Map JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="js/map-page.js"></script>
+  </body>
+</html>
