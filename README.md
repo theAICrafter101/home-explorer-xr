@@ -1,10 +1,6 @@
 # Home Explorer XR
 
-A clean and interactive website for exploring homes in a more visual, engaging way.
-
-## What this project is
-
-**Home Explorer XR** is a front-end web experience built with HTML, CSS, and JavaScript.  
+A clean and interactive website for families to explore homes in a more visual, engaging way.
 It focuses on making home browsing feel easy, smooth, and modern.
 
 ## Key features
@@ -15,14 +11,8 @@ It focuses on making home browsing feel easy, smooth, and modern.
 - **Interactive experience**  
   UI elements respond smoothly to user actions for a more immersive feel.
 
-- **Modern, responsive design**  
-  Built to look good across desktop and mobile screen sizes.
-
 - **Clean visual style**  
   Uses clear sections, readable text, and balanced spacing.
-
-- **Lightweight front-end stack**  
-  No heavy framework required — just core web technologies.
 
 ## Built with
 
@@ -33,7 +23,7 @@ It focuses on making home browsing feel easy, smooth, and modern.
 ## Why this project stands out
 
 Home Explorer XR keeps things straightforward:  
-it combines a modern look with practical browsing features, without making the experience complicated.
+It combines a modern look with practical browsing features, without making the experience complicated.
 
 ## Getting started
 
